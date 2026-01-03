@@ -16,12 +16,27 @@ namespace Bark.Modules
         public static Dictionary<string, bool> enabledModules = new Dictionary<string, bool>();
         public static string enabledModulesKey = "BarkEnabledModules";
 
+        // Cache for reflection field lookups to avoid repeated GetFields() calls
+        private static readonly Dictionary<Type, FieldInfo[]> _fieldCache = new Dictionary<Type, FieldInfo[]>();
+
         protected virtual void ReloadConfiguration() { }
 
         public abstract string GetDisplayName();
+
+        private FieldInfo[] GetCachedFields()
+        {
+            var type = GetType();
+            if (!_fieldCache.TryGetValue(type, out var fields))
+            {
+                fields = type.GetFields();
+                _fieldCache[type] = fields;
+            }
+            return fields;
+        }
+
         protected void SettingsChanged(object sender, SettingChangedEventArgs e)
         {
-            foreach (var field in this.GetType().GetFields())
+            foreach (var field in GetCachedFields())
                 if (e.ChangedSetting == field.GetValue(this))
                     ReloadConfiguration();
         }
