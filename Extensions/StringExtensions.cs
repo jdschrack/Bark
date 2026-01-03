@@ -1,22 +1,32 @@
-﻿using System;
+﻿using Bark.Tools;
+using System;
 using System.IO;
 using System.Security.Cryptography;
 using System.Text;
 
 namespace Bark.Extensions
 {
+    /// <summary>
+    /// String encryption utilities for obfuscating configuration values.
+    /// NOTE: This provides obfuscation only, not cryptographic security.
+    /// The key is embedded in the binary and can be extracted by decompilation.
+    /// </summary>
     public static class StringExtensions
     {
-        public static string Key = "ShibaAspectAndTundraSmellLikeDog";
+        // Key for obfuscation - not intended for secure encryption
+        private static readonly string _key = "ShibaAspectAndTundraSmellLikeDog";
+
+        // Legacy zero IV for backwards compatibility with existing encrypted strings
+        private static readonly byte[] _legacyIv = new byte[16];
+
         public static string EncryptString(this string plainText)
         {
-            byte[] iv = new byte[16];
             byte[] array;
 
             using (Aes aes = Aes.Create())
             {
-                aes.Key = Encoding.UTF8.GetBytes(Key);
-                aes.IV = iv;
+                aes.Key = Encoding.UTF8.GetBytes(_key);
+                aes.IV = _legacyIv;
 
                 ICryptoTransform encryptor = aes.CreateEncryptor(aes.Key, aes.IV);
 
@@ -39,25 +49,40 @@ namespace Bark.Extensions
 
         public static string DecryptString(this string cipherText)
         {
-            byte[] iv = new byte[16];
-            byte[] buffer = Convert.FromBase64String(cipherText);
+            if (string.IsNullOrEmpty(cipherText))
+                return string.Empty;
 
-            using (Aes aes = Aes.Create())
+            try
             {
-                aes.Key = Encoding.UTF8.GetBytes(Key);
-                aes.IV = iv;
-                ICryptoTransform decryptor = aes.CreateDecryptor(aes.Key, aes.IV);
+                byte[] buffer = Convert.FromBase64String(cipherText);
 
-                using (MemoryStream memoryStream = new MemoryStream(buffer))
+                using (Aes aes = Aes.Create())
                 {
-                    using (CryptoStream cryptoStream = new CryptoStream((Stream)memoryStream, decryptor, CryptoStreamMode.Read))
+                    aes.Key = Encoding.UTF8.GetBytes(_key);
+                    aes.IV = _legacyIv;
+                    ICryptoTransform decryptor = aes.CreateDecryptor(aes.Key, aes.IV);
+
+                    using (MemoryStream memoryStream = new MemoryStream(buffer))
                     {
-                        using (StreamReader streamReader = new StreamReader((Stream)cryptoStream))
+                        using (CryptoStream cryptoStream = new CryptoStream((Stream)memoryStream, decryptor, CryptoStreamMode.Read))
                         {
-                            return streamReader.ReadToEnd();
+                            using (StreamReader streamReader = new StreamReader((Stream)cryptoStream))
+                            {
+                                return streamReader.ReadToEnd();
+                            }
                         }
                     }
                 }
+            }
+            catch (FormatException ex)
+            {
+                Logging.Warning($"DecryptString: Invalid base64 format - {ex.Message}");
+                return string.Empty;
+            }
+            catch (CryptographicException ex)
+            {
+                Logging.Warning($"DecryptString: Decryption failed - {ex.Message}");
+                return string.Empty;
             }
         }
     }

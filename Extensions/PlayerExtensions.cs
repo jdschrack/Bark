@@ -28,7 +28,10 @@ namespace Bark.Extensions
         public static T GetProperty<T>(this VRRig rig, string key)
         {
             if(rig?.PhotonView()?.Owner is Photon.Realtime.Player player)
-                return (T)player?.CustomProperties[key];
+            {
+                if (player?.CustomProperties?.TryGetValue(key, out var value) == true)
+                    return (T)value;
+            }
             return default(T);
         }
 
@@ -48,12 +51,16 @@ namespace Bark.Extensions
 
         public static T GetProperty<T>(this Photon.Realtime.Player player, string key)
         {
-            return (T)player?.CustomProperties[key];
+            if (player?.CustomProperties?.TryGetValue(key, out var value) == true)
+                return (T)value;
+            return default(T);
         }
 
         public static bool HasProperty(this Photon.Realtime.Player player, string key)
         {
-            return !(player?.CustomProperties[key] is null);
+            if (player?.CustomProperties?.TryGetValue(key, out var value) == true)
+                return value != null;
+            return false;
         }
 
         public static bool ModuleEnabled(this Photon.Realtime.Player player, string mod)
