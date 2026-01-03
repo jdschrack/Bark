@@ -120,14 +120,19 @@ namespace Bark.Modules.Physics
         {
             bool shrink = potion.gameObject == shrinkPotion;
             if (!shrink && !PositionValidator.Instance.isValidAndStable) return;
-            float delta = shrink ? .99f : 1.01f;
-            delta = Mathf.Clamp(sizeChanger.MinScale * delta, .03f, 20f);
-            if(delta < 1)
-                potion.gulp.pitch = MathExtensions.Map(Player.Instance.scale, 0, 1, 1.5f, 1);
+
+            // Capture current scale once to avoid race conditions between reads
+            float currentScale = sizeChanger.MinScale;
+            float multiplier = shrink ? .99f : 1.01f;
+            float newScale = Mathf.Clamp(currentScale * multiplier, .03f, 20f);
+
+            if (newScale < 1)
+                potion.gulp.pitch = MathExtensions.Map(currentScale, 0, 1, 1.5f, 1);
             else
-                potion.gulp.pitch = MathExtensions.Map(Player.Instance.scale, 1, 20, 1, .5f);
-            minScale.SetValue(delta);
-            maxScale.SetValue(delta);
+                potion.gulp.pitch = MathExtensions.Map(currentScale, 1, 20, 1, .5f);
+
+            minScale.SetValue(newScale);
+            maxScale.SetValue(newScale);
             active = true;
         }
 

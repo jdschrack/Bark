@@ -98,7 +98,7 @@ namespace Bark.Modules
                     Logging.Exception(inner);
                 }
             }
-            return null;
+            return new List<Type>();
         }
 
     }

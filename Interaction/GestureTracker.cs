@@ -43,6 +43,8 @@ namespace Bark.Gestures
 
         public Transform leftPointerTransform, rightPointerTransform, leftThumbTransform, rightThumbTransform;
 
+        private bool _isInitialized = false;
+
         public const string localRigPath =
             "Player Objects/Local VRRig/Local Gorilla Player";
         public const string palmPath =
@@ -104,6 +106,12 @@ namespace Bark.Gestures
                 leftStickAxis, rightStickAxis
             };
             BuildColliders();
+            if (!_isInitialized)
+            {
+                Logging.Warning("GestureTracker failed to initialize - disabling component");
+                this.enabled = false;
+                return;
+            }
             var observer = chest.AddComponent<CollisionObserver>();
             observer.OnTriggerEntered += OnChestBeat;
         }
@@ -265,27 +273,59 @@ namespace Bark.Gestures
                 radius = 1 / 4f;
             chest.transform.localScale = new Vector3(radius, height, radius);
 
-            var leftPalm = GameObject.Find(string.Format(localRigPath + palmPath, "L")).transform;
+            var leftPalmObj = GameObject.Find(string.Format(localRigPath + palmPath, "L"));
+            if (leftPalmObj == null)
+            {
+                Logging.Warning("Could not find left palm transform");
+                return;
+            }
+            var leftPalm = leftPalmObj.transform;
             leftPalmInteractor = CreateInteractor("Left Palm Interactor", leftPalm, 1 / 16f);
             leftHand = leftPalmInteractor.gameObject;
             leftHand.transform.localRotation = Quaternion.Euler(-90, -90, 0);
 
-            var rightPalm = GameObject.Find(string.Format(localRigPath + palmPath, "R")).transform;
+            var rightPalmObj = GameObject.Find(string.Format(localRigPath + palmPath, "R"));
+            if (rightPalmObj == null)
+            {
+                Logging.Warning("Could not find right palm transform");
+                return;
+            }
+            var rightPalm = rightPalmObj.transform;
             rightPalmInteractor = CreateInteractor("Right Palm Interactor", rightPalm, 1 / 16f);
             rightHand = rightPalmInteractor.gameObject;
             rightHand.transform.localRotation = Quaternion.Euler(-90, 0, 0);
 
-
-            leftPointerTransform = GameObject.Find(string.Format(localRigPath + pointerFingerPath, "L")).transform;
+            var leftPointerObj = GameObject.Find(string.Format(localRigPath + pointerFingerPath, "L"));
+            if (leftPointerObj == null)
+            {
+                Logging.Warning("Could not find left pointer finger transform");
+                return;
+            }
+            leftPointerTransform = leftPointerObj.transform;
             leftPointerInteractor = CreateInteractor("Left Pointer Interactor", leftPointerTransform, 1 / 32f);
-            leftPointerObj = leftPointerInteractor.gameObject;
+            this.leftPointerObj = leftPointerInteractor.gameObject;
 
-            rightPointerTransform = GameObject.Find(string.Format(localRigPath + pointerFingerPath, "R")).transform;
+            var rightPointerObj = GameObject.Find(string.Format(localRigPath + pointerFingerPath, "R"));
+            if (rightPointerObj == null)
+            {
+                Logging.Warning("Could not find right pointer finger transform");
+                return;
+            }
+            rightPointerTransform = rightPointerObj.transform;
             rightPointerInteractor = CreateInteractor("Right Pointer Interactor", rightPointerTransform, 1 / 32f);
-            rightPointerObj = rightPointerInteractor.gameObject;
+            this.rightPointerObj = rightPointerInteractor.gameObject;
 
-            leftThumbTransform = GameObject.Find(string.Format(localRigPath + thumbPath, "L")).transform;
-            rightThumbTransform = GameObject.Find(string.Format(localRigPath + thumbPath, "R")).transform;
+            var leftThumbObj = GameObject.Find(string.Format(localRigPath + thumbPath, "L"));
+            var rightThumbObj = GameObject.Find(string.Format(localRigPath + thumbPath, "R"));
+            if (leftThumbObj == null || rightThumbObj == null)
+            {
+                Logging.Warning("Could not find thumb transforms");
+                return;
+            }
+            leftThumbTransform = leftThumbObj.transform;
+            rightThumbTransform = rightThumbObj.transform;
+
+            _isInitialized = true;
         }
 
         public BarkInteractor CreateInteractor(string name, Transform parent, float scale)
