@@ -12,6 +12,7 @@ using System.Reflection;
 using Bark.Gestures;
 using Bark.Networking;
 using GorillaLocomotion;
+using Player = GorillaLocomotion.GTPlayer;
 using UnityEngine.UI;
 using HarmonyLib;
 using System.Collections;
@@ -220,25 +221,138 @@ namespace Bark
 
         IEnumerator JoinLobbyInternal(string name, string gamemode)
         {
-            PhotonNetworkController.Instance.AttemptDisconnect();
+            // Disconnect from current room - use Traverse in case API has changed
+            try
+            {
+                var pnc = PhotonNetworkController.Instance;
+                // Try to find a disconnect method - API may have changed
+                var disconnectMethod = Traverse.Create(pnc).Method("AttemptDisconnect");
+                if (disconnectMethod.MethodExists())
+                    disconnectMethod.GetValue();
+                else
+                {
+                    // Fallback: try to disconnect via PhotonNetwork directly
+                    if (PhotonNetwork.InRoom)
+                        PhotonNetwork.LeaveRoom();
+                }
+            }
+            catch (Exception e)
+            {
+                Logging.Exception(e);
+                if (PhotonNetwork.InRoom)
+                    PhotonNetwork.LeaveRoom();
+            }
+
             do
             {
                 yield return new WaitForSeconds(1f);
                 Logging.Debug("Waiting to disconnect");
             }
             while (PhotonNetwork.InRoom);
-            
-            string gamemodeCache = GorillaComputer.instance.currentGameMode;
+
+            // Get current game mode using Traverse (currentGameMode may be WatchableStringSO now)
+            string gamemodeCache = GetCurrentGameMode();
             Logging.Debug("Changing gamemode from", gamemodeCache, "to", gamemode);
-            GorillaComputer.instance.currentGameMode = gamemode;
-            PhotonNetworkController.Instance.AttemptToJoinSpecificRoom(name);
+            SetCurrentGameMode(gamemode);
+
+            // Join the room - use Traverse in case API signature has changed
+            try
+            {
+                var pnc = PhotonNetworkController.Instance;
+                var joinMethod = Traverse.Create(pnc).Method("AttemptToJoinSpecificRoom", new Type[] { typeof(string) });
+                if (joinMethod.MethodExists())
+                {
+                    // Old API: just name parameter
+                    joinMethod.GetValue(name);
+                }
+                else
+                {
+                    // New API might have additional parameters - try reflection
+                    var methods = pnc.GetType().GetMethods();
+                    foreach (var method in methods)
+                    {
+                        if (method.Name == "AttemptToJoinSpecificRoom")
+                        {
+                            var parameters = method.GetParameters();
+                            if (parameters.Length == 1)
+                            {
+                                method.Invoke(pnc, new object[] { name });
+                                break;
+                            }
+                            else if (parameters.Length == 2)
+                            {
+                                // Get the enum type for the second parameter
+                                var enumType = parameters[1].ParameterType;
+                                var enumValue = Enum.ToObject(enumType, 0); // Use default/first enum value
+                                method.Invoke(pnc, new object[] { name, enumValue });
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                Logging.Exception(e);
+            }
 
             while (!PhotonNetwork.InRoom)
             {
                 yield return new WaitForSeconds(1f);
                 Logging.Debug("Waiting to connect");
             }
-            GorillaComputer.instance.currentGameMode = gamemodeCache;
+            SetCurrentGameMode(gamemodeCache);
+        }
+
+        /// <summary>
+        /// Gets the current game mode string, handling potential WatchableStringSO type.
+        /// </summary>
+        private static string GetCurrentGameMode()
+        {
+            try
+            {
+                var currentGameModeField = Traverse.Create(GorillaComputer.instance).Field("currentGameMode");
+                var value = currentGameModeField.GetValue();
+                if (value is string strValue)
+                    return strValue;
+                // If it's a WatchableStringSO, try to get its Value property
+                if (value != null)
+                {
+                    var valueProperty = Traverse.Create(value).Property("Value");
+                    return valueProperty.GetValue<string>();
+                }
+            }
+            catch (Exception e)
+            {
+                Logging.Exception(e);
+            }
+            return "CASUAL";
+        }
+
+        /// <summary>
+        /// Sets the current game mode string, handling potential WatchableStringSO type.
+        /// </summary>
+        private static void SetCurrentGameMode(string gamemode)
+        {
+            try
+            {
+                var currentGameModeField = Traverse.Create(GorillaComputer.instance).Field("currentGameMode");
+                var value = currentGameModeField.GetValue();
+                if (value is string)
+                {
+                    currentGameModeField.SetValue(gamemode);
+                }
+                else if (value != null)
+                {
+                    // If it's a WatchableStringSO, try to set its Value property
+                    var valueProperty = Traverse.Create(value).Property("Value");
+                    valueProperty.SetValue(gamemode);
+                }
+            }
+            catch (Exception e)
+            {
+                Logging.Exception(e);
+            }
         }
     }
 }

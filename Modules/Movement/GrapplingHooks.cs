@@ -6,6 +6,7 @@ using Bark.GUI;
 using Bark.Tools;
 using Bark.Extensions;
 using GorillaLocomotion;
+using Player = GorillaLocomotion.GTPlayer;
 using BepInEx.Configuration;
 using Bark.Interaction;
 
@@ -273,7 +274,7 @@ namespace Bark.Modules.Movement
             if (isGrappling)
             {
                 var rigidBody = Player.Instance.bodyCollider.attachedRigidbody;
-                rigidBody.velocity +=
+                rigidBody.linearVelocity +=
                     transform.forward *
                     steerForce * Time.fixedDeltaTime * Player.Instance.scale;
             }

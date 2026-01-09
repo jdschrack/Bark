@@ -1,4 +1,5 @@
 ﻿using GorillaLocomotion;
+using Player = GorillaLocomotion.GTPlayer;
 using Bark.Tools;
 using System;
 using UnityEngine;

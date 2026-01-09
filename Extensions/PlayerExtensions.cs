@@ -9,14 +9,89 @@ namespace Bark.Extensions
 {
     public static class PlayerExtensions
     {
-        public static void AddForce(this Player self, Vector3 v)
+        // Cached Traverse instances for performance
+        private static Traverse playerTraverse;
+        private static GTPlayer cachedPlayer;
+
+        private static Traverse GetPlayerTraverse(GTPlayer player)
         {
-            self.bodyCollider.attachedRigidbody.velocity += v;
+            if (cachedPlayer != player || playerTraverse == null)
+            {
+                cachedPlayer = player;
+                playerTraverse = Traverse.Create(player);
+            }
+            return playerTraverse;
         }
 
-        public static void SetVelocity(this Player self, Vector3 v)
+        public static void AddForce(this GTPlayer self, Vector3 v)
         {
-            self.bodyCollider.attachedRigidbody.velocity = v;
+            self.bodyCollider.attachedRigidbody.linearVelocity += v;
+        }
+
+        public static void SetVelocity(this GTPlayer self, Vector3 v)
+        {
+            self.bodyCollider.attachedRigidbody.linearVelocity = v;
+        }
+
+        /// <summary>
+        /// Gets whether the left hand was touching a surface last frame.
+        /// Uses Traverse to access the field which may be private in newer game versions.
+        /// </summary>
+        public static bool WasLeftHandTouching(this GTPlayer self)
+        {
+            return GetPlayerTraverse(self).Field("wasLeftHandTouching").GetValue<bool>();
+        }
+
+        /// <summary>
+        /// Gets whether the right hand was touching a surface last frame.
+        /// Uses Traverse to access the field which may be private in newer game versions.
+        /// </summary>
+        public static bool WasRightHandTouching(this GTPlayer self)
+        {
+            return GetPlayerTraverse(self).Field("wasRightHandTouching").GetValue<bool>();
+        }
+
+        /// <summary>
+        /// Gets the left controller transform.
+        /// Uses Traverse to access the field which may be private in newer game versions.
+        /// </summary>
+        public static Transform GetLeftControllerTransform(this GTPlayer self)
+        {
+            return GetPlayerTraverse(self).Field("leftControllerTransform").GetValue<Transform>();
+        }
+
+        /// <summary>
+        /// Gets the right controller transform.
+        /// Uses Traverse to access the field which may be private in newer game versions.
+        /// </summary>
+        public static Transform GetRightControllerTransform(this GTPlayer self)
+        {
+            return GetPlayerTraverse(self).Field("rightControllerTransform").GetValue<Transform>();
+        }
+
+        /// <summary>
+        /// Gets the current velocity of the player.
+        /// Uses Traverse to access the field which may be private in newer game versions.
+        /// </summary>
+        public static Vector3 GetCurrentVelocity(this GTPlayer self)
+        {
+            return GetPlayerTraverse(self).Field("currentVelocity").GetValue<Vector3>();
+        }
+
+        /// <summary>
+        /// Sets the player's scale using Traverse (scale property may be read-only in newer game versions).
+        /// </summary>
+        public static void SetScale(this GTPlayer self, float scale)
+        {
+            GetPlayerTraverse(self).Field("scale").SetValue(scale);
+        }
+
+        /// <summary>
+        /// Sets the VRRig's scale factor using Traverse (scaleFactor property may be read-only in newer game versions).
+        /// </summary>
+        public static void SetScaleFactor(this VRRig rig, float scaleFactor)
+        {
+            Traverse.Create(rig).Field("scaleFactor").SetValue(scaleFactor);
         }
 
         public static PhotonView PhotonView(this VRRig rig)

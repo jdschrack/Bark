@@ -1,4 +1,5 @@
 ﻿using GorillaLocomotion;
+using Player = GorillaLocomotion.GTPlayer;
 using Bark.Tools;
 using System;
 using UnityEngine;
@@ -215,7 +216,7 @@ namespace Bark.Modules.Teleportation
         {
             GameObject outPortal = GetConnectedPortal(inPortal);
             if (!outPortal) return;
-            float p = Player.Instance.currentVelocity.magnitude;
+            float p = Player.Instance.GetCurrentVelocity().magnitude;
             TeleportPatch.TeleportPlayer(outPortal.transform.position + (outPortal.transform.forward * 1f), false);
             Player.Instance.SetVelocity(p * outPortal.transform.forward);
         }

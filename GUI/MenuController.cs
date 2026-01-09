@@ -12,7 +12,7 @@ using Bark.Modules.Teleportation;
 using Bark.Tools;
 using Bark.Interaction;
 using Bark.Extensions;
-using Player = GorillaLocomotion.Player;
+using Player = GorillaLocomotion.GTPlayer;
 using BepInEx.Configuration;
 using UnityEngine.XR;
 using Bark.Modules.Misc;
@@ -164,7 +164,7 @@ namespace Bark.GUI
         void ResetPosition()
         {
             _rigidbody.isKinematic = true;
-            _rigidbody.velocity = Vector3.zero;
+            _rigidbody.linearVelocity = Vector3.zero;
             transform.SetParent(Player.Instance.bodyCollider.transform);
             transform.localPosition = initialMenuOffset;
             transform.localRotation = Quaternion.identity;
@@ -313,12 +313,12 @@ namespace Bark.GUI
             {
                 if (isPressed)
                 {
-                    foreach (var c in FindObjectsOfType<Collider>())
+                    foreach (var c in FindObjectsByType<Collider>(FindObjectsSortMode.None))
                         c.gameObject.AddComponent<ColliderRenderer>();
                 }
                 else
                 {
-                    foreach (var c in FindObjectsOfType<ColliderRenderer>())
+                    foreach (var c in FindObjectsByType<ColliderRenderer>(FindObjectsSortMode.None))
                         c.Obliterate();
                 }
             });
@@ -377,7 +377,7 @@ namespace Bark.GUI
 
         public Material GetMaterial(string name)
         {
-            foreach (var renderer in FindObjectsOfType<Renderer>())
+            foreach (var renderer in FindObjectsByType<Renderer>(FindObjectsSortMode.None))
             {
                 string _name = renderer.material.name.ToLower();
                 if (_name.Contains(name))

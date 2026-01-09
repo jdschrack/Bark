@@ -1,5 +1,7 @@
 ﻿using Bark.Gestures;
+using Bark.Extensions;
 using GorillaLocomotion;
+using Player = GorillaLocomotion.GTPlayer;
 using UnityEngine;
 
 
@@ -66,8 +68,8 @@ namespace Bark.Interaction
                     rb.useGravity = true;
 
                     // Apply the force to the rigidbody
-                    rb.velocity = (Player.Instance.currentVelocity) + velEstimator.linearVelocity * throwForceMultiplier;
-                    rb.velocity *= 1 / Player.Instance.scale;
+                    rb.linearVelocity = (Player.Instance.GetCurrentVelocity()) + velEstimator.linearVelocity * throwForceMultiplier;
+                    rb.linearVelocity *= 1 / Player.Instance.scale;
                     rb.angularVelocity = velEstimator.angularVelocity;
                 }
                 else

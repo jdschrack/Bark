@@ -1,6 +1,8 @@
 ﻿using GorillaLocomotion;
+using Player = GorillaLocomotion.GTPlayer;
 using Bark.Gestures;
 using Bark.GUI;
+using Bark.Extensions;
 using UnityEngine;
 using BepInEx.Configuration;
 
@@ -22,14 +24,14 @@ namespace Bark.Modules.Movement
                 tracker.rightGrip.pressed) return;
 
             var player = Player.Instance;
-            if (player.wasLeftHandTouching || player.wasRightHandTouching) return;
+            if (player.WasLeftHandTouching() || player.WasRightHandTouching()) return;
 
             if (SteerWith.Value == "head")
                 direction = player.headCollider.transform.forward;
 
             var rigidbody = player.bodyCollider.attachedRigidbody;
             Vector3 velocity = direction * player.scale * speedScale;
-            rigidbody.velocity = Vector3.Lerp(rigidbody.velocity, velocity, acceleration);
+            rigidbody.linearVelocity = Vector3.Lerp(rigidbody.linearVelocity, velocity, acceleration);
         }
 
         protected override void OnEnable()

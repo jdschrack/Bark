@@ -3,6 +3,7 @@ using Bark.Gestures;
 using Bark.GUI;
 using Bark.Tools;
 using GorillaLocomotion;
+using Player = GorillaLocomotion.GTPlayer;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -74,7 +75,7 @@ namespace Bark.Modules.Multiplayer
                     sithlordHandParticles.Clear();
                     playerParticles.Stop();
                     playerParticles.Clear();
-                    rb.velocity = Player.Instance.bodyVelocityTracker.GetAverageVelocity(true, 0.15f, false) * 2;
+                    rb.linearVelocity = Player.Instance.bodyVelocityTracker.GetAverageVelocity(true, 0.15f, false) * 2;
                     return;
                 }
 
@@ -82,9 +83,9 @@ namespace Bark.Modules.Multiplayer
                 Vector3 direction = end - Player.Instance.bodyCollider.transform.position;
                 rb.AddForce(direction * 10, ForceMode.Impulse);
                 float dampingThreshold = direction.magnitude * 10;
-                //if (rb.velocity.magnitude > dampingThreshold)
+                //if (rb.linearVelocity.magnitude > dampingThreshold)
                 //if(direction.magnitude < 1)
-                rb.velocity = Vector3.Lerp(rb.velocity, Vector3.zero, .1f);
+                rb.linearVelocity = Vector3.Lerp(rb.linearVelocity, Vector3.zero, .1f);
             }
 
         }

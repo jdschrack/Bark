@@ -5,6 +5,7 @@ using Bark.Modules.Movement;
 using Bark.Patches;
 using Bark.Tools;
 using GorillaLocomotion;
+using Player = GorillaLocomotion.GTPlayer;
 using System;
 using System.Collections;
 using System.Collections.Generic;

@@ -10,6 +10,7 @@ using HarmonyLib;
 using BepInEx.Configuration;
 using UnityEngine.XR;
 using GorillaLocomotion;
+using Player = GorillaLocomotion.GTPlayer;
 
 namespace Bark.Modules.Movement
 {

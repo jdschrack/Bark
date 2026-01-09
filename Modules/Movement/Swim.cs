@@ -1,6 +1,7 @@
 ﻿using Bark.Extensions;
 using Bark.GUI;
 using GorillaLocomotion;
+using Player = GorillaLocomotion.GTPlayer;
 using GorillaLocomotion.Swimming;
 using HarmonyLib;
 using UnityEngine;

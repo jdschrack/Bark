@@ -5,6 +5,7 @@ using Bark.GUI;
 using Bark.Tools;
 using Bark.Extensions;
 using GorillaLocomotion;
+using Player = GorillaLocomotion.GTPlayer;
 using BepInEx.Configuration;
 using Bark.Interaction;
 using System.Collections.Generic;
@@ -51,7 +52,7 @@ namespace Bark.Modules.Physics
             try
             {
                 rig.transform.localScale = Vector3.one;
-                rig.scaleFactor = 1;
+                rig.SetScaleFactor(1);
             }
             catch (Exception e)
             {
@@ -166,11 +167,11 @@ namespace Bark.Modules.Physics
                 try
                 {
                     rig.transform.localScale = Vector3.one;
-                    rig.scaleFactor = 1;
+                    rig.SetScaleFactor(1);
                 }
                 catch (Exception e) { Logging.Exception(e); };
             }
-            foreach (SizeManager manager in FindObjectsOfType<SizeManager>())
+            foreach (SizeManager manager in FindObjectsByType<SizeManager>(FindObjectsSortMode.None))
             {
                 Traverse managerTraverse = Traverse.Create(manager);
                 Traverse scaleFromChanger = managerTraverse.Method("ScaleFromChanger");
@@ -183,7 +184,7 @@ namespace Bark.Modules.Physics
                         if (!t) continue;
                         float scale = scaleFromChanger.GetValue<float>(controllingChanger.GetValue<SizeChanger>(t), t);
                         t.localScale = Vector3.one * scale;
-                        manager.targetRig.scaleFactor = scale;
+                        manager.targetRig.SetScaleFactor(scale);
                         NetworkPropertyHandler.Instance?.ChangeProperty(playerSizeKey, Player.Instance.scale);
                     }
                     else
@@ -192,7 +193,7 @@ namespace Bark.Modules.Physics
                         var player = manager.targetPlayer;
                         float scale = scaleFromChanger.GetValue<float>(controllingChanger.GetValue<SizeChanger>(t), t);
                         player.turnParent.transform.localScale = Vector3.one * scale;
-                        player.scale = scale;
+                        player.SetScale(scale);
                     }
                 }
                 catch (Exception e) { Logging.Exception(e); };
@@ -444,7 +445,7 @@ namespace Bark.Modules.Physics
         {
             transform.SetParent(null);
             rb.isKinematic = false;
-            rb.velocity = this.transform.up * 2.5f;
+            rb.linearVelocity = this.transform.up * 2.5f;
             popSource.Play();
         }
     }

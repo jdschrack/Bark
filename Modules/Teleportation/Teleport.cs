@@ -1,4 +1,5 @@
 ﻿using GorillaLocomotion;
+using Player = GorillaLocomotion.GTPlayer;
 using Bark.Extensions;
 using Bark.Gestures;
 using Bark.GUI;

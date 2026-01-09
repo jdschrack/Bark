@@ -1,5 +1,5 @@
 ﻿using HarmonyLib;
-using Bark.Modules.Movement;
+using Bark.Modules;
 using Bark.Tools;
 using System;
 using GorillaLocomotion;
@@ -46,19 +46,7 @@ namespace Bark.Patches
         }
     }
 
-    [HarmonyPatch(typeof(GorillaBattleManager))]
-    [HarmonyPatch("LocalPlayerSpeed", MethodType.Normal)]
-    internal class BattleSpeedPatch
-    {
-        private static void Postfix(ref float[] __result)
-        {
-            try
-            {
-                SpeedPatchHelper.ApplySpeedMultiplier(ref __result);
-            }
-            catch (Exception e) { Logging.Exception(e); }
-        }
-    }
+    // GorillaBattleManager no longer exists in the current game version
 
     [HarmonyPatch(typeof(GorillaHuntManager))]
     [HarmonyPatch("LocalPlayerSpeed", MethodType.Normal)]
@@ -74,7 +62,7 @@ namespace Bark.Patches
         }
     }
 
-    [HarmonyPatch(typeof(Player))]
+    [HarmonyPatch(typeof(GTPlayer))]
     [HarmonyPatch("GetSwimmingVelocityForHand", MethodType.Normal)]
     internal class SwimmingVelocityPatch
     {

@@ -17,8 +17,6 @@ namespace Bark.Networking
         public Action<NetworkedPlayer, bool> OnGripPressed, OnGripReleased;
         public bool hasBark;
         private bool leftGripWasPressed, rightGripWasPressed;
-        private bool leftTriggerWasPressed, rightTriggerWasPressed;
-        private bool leftThumbWasPressed, rightThumbWasPressed;
         public float LeftGripAmount { get; protected set; }
         public float RightGripAmount { get; protected set; }
         public float LeftTriggerAmount { get; protected set; }
