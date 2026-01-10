@@ -100,7 +100,7 @@ namespace Bark
                 assetBundle = AssetUtils.LoadAssetBundle("Bark/Resources/barkbundle");
                 if (assetBundle == null)
                 {
-                    Logging.Error("Failed to load asset bundle - Bark will not function correctly");
+                    Logging.Warning("Failed to load asset bundle - Bark will not function correctly");
                     return;
                 }
                 monkeMenuPrefab = assetBundle.LoadAsset<GameObject>("Bark Menu");
