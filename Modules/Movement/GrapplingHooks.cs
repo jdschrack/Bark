@@ -14,20 +14,35 @@ namespace Bark.Modules.Movement
 {
     public class GrapplingHooks : BarkModule
     {
+        #region Constants
         public static readonly string DisplayName = "Grappling Hooks";
+
+        // Holster positioning relative to player body
+        private static readonly Vector3 HOLSTER_OFFSET = new Vector3(0.15f, -0.15f, 0.15f);
+
+        // Configuration multipliers (convert config values 0-10 to useful ranges)
+        private const float SPRING_FORCE_MULTIPLIER = 2f;
+        private const float STEERING_FORCE_DIVISOR = 2f;
+        private const float MAX_LENGTH_MULTIPLIER = 5f;
+
+        // Default config values
+        private const int DEFAULT_CONFIG_VALUE = 5;
+        #endregion
+
         private GameObject bananaGunPrefab, bananaGunL, bananaGunR;
         private Transform holsterL, holsterR;
-        private Vector3 holsterOffset = new Vector3(0.15f, -0.15f, 0.15f);
 
         void Awake()
         {
-            try
+            if (Plugin.assetBundle == null)
             {
-                bananaGunPrefab = Plugin.assetBundle.LoadAsset<GameObject>("Banana Gun");
+                Logging.Warning("AssetBundle is null. Cannot load 'Banana Gun'.");
+                return;
             }
-            catch (Exception e)
+            bananaGunPrefab = Plugin.assetBundle.LoadAsset<GameObject>("Banana Gun");
+            if (bananaGunPrefab == null)
             {
-                Logging.Exception(e);
+                Logging.Warning("Failed to load 'Banana Gun' prefab from asset bundle.");
             }
         }
 
@@ -40,8 +55,18 @@ namespace Bark.Modules.Movement
         {
             try
             {
-                if (!bananaGunPrefab)
+                if (bananaGunPrefab == null)
+                {
+                    if (Plugin.assetBundle == null) {
+                        Logging.Warning("AssetBundle is null. Cannot setup grappling hooks.");
+                        return;
+                    }
                     bananaGunPrefab = Plugin.assetBundle.LoadAsset<GameObject>("Banana Gun");
+                    if (bananaGunPrefab == null) {
+                        Logging.Warning("Failed to load 'Banana Gun' prefab in Setup. Aborting setup.");
+                        return;
+                    }
+                }
 
                 holsterL = new GameObject($"Holster (Left)").transform;
                 bananaGunL = Instantiate(bananaGunPrefab);
@@ -64,9 +89,9 @@ namespace Bark.Modules.Movement
             {
                 holster.SetParent(Player.Instance.bodyCollider.transform, false);
                 var offset = new Vector3(
-                    holsterOffset.x * (isLeft ? -1 : 1),
-                    holsterOffset.y,
-                    holsterOffset.z
+                    HOLSTER_OFFSET.x * (isLeft ? -1 : 1),
+                    HOLSTER_OFFSET.y,
+                    HOLSTER_OFFSET.z
                 );
                 holster.localPosition = offset;
 
@@ -82,14 +107,10 @@ namespace Bark.Modules.Movement
         }
         protected override void Cleanup()
         {
-            try
-            {
-                holsterL?.gameObject?.Obliterate();
-                holsterR?.gameObject?.Obliterate();
-                bananaGunL?.gameObject?.Obliterate();
-                bananaGunR?.gameObject?.Obliterate();
-            }
-            catch (Exception e) { Logging.Exception(e); }
+            holsterL?.gameObject?.Obliterate();
+            holsterR?.gameObject?.Obliterate();
+            bananaGunL?.gameObject?.Obliterate();
+            bananaGunR?.gameObject?.Obliterate();
         }
 
         protected override void OnEnable()
@@ -107,10 +128,10 @@ namespace Bark.Modules.Movement
             foreach (var gun in guns)
             {
                 if (!gun) continue;
-                gun.pullForce = Spring.Value * 2;
+                gun.pullForce = Spring.Value * SPRING_FORCE_MULTIPLIER;
                 gun.ropeType = RopeType.Value == "elastic" ? BananaGun.RopeType.ELASTIC : BananaGun.RopeType.STATIC;
-                gun.steerForce = Steering.Value / 2f;
-                gun.maxLength = MaxLength.Value * 5;
+                gun.steerForce = Steering.Value / STEERING_FORCE_DIVISOR;
+                gun.maxLength = MaxLength.Value * MAX_LENGTH_MULTIPLIER;
                 Logging.Debug(
                     "gun.pullForce:", gun.pullForce,
                     "gun.ropeType:", gun.ropeType,
@@ -135,21 +156,21 @@ namespace Bark.Modules.Movement
             Spring = Plugin.configFile.Bind(
                 section: DisplayName,
                 key: "springiness",
-                defaultValue: 5,
+                defaultValue: DEFAULT_CONFIG_VALUE,
                 description: "If ropes are elastic, this is how springy the ropes are"
             );
 
             Steering = Plugin.configFile.Bind(
                 section: DisplayName,
                 key: "steering",
-                defaultValue: 5,
+                defaultValue: DEFAULT_CONFIG_VALUE,
                 description: "How much influence you have over your velocity"
             );
 
             MaxLength = Plugin.configFile.Bind(
                 section: DisplayName,
                 key: "max length",
-                defaultValue: 5,
+                defaultValue: DEFAULT_CONFIG_VALUE,
                 description: "The maximum distance that the grappling hook can reach"
             );
         }
@@ -167,39 +188,57 @@ namespace Bark.Modules.Movement
         }
     }
 
+    /// <summary>
+    /// BananaGun is a coordinator class that manages the grappling hook functionality.
+    /// It delegates physics to BananaGunPhysics and visuals to BananaGunVisuals,
+    /// following the Single Responsibility Principle.
+    /// </summary>
     public class BananaGun : BarkGrabbable
     {
+        #region Constants
+        private const float GRAPPLE_RAYCAST_RADIUS = 0.5f;
+        private static readonly Vector3 GUN_MODEL_LOCAL_POSITION = new Vector3(0.55f, 0, 0.85f);
+
+        // Default configuration values
+        private const float DEFAULT_PULL_FORCE = 10f;
+        private const float DEFAULT_STEER_FORCE = 5f;
+        private const float DEFAULT_MAX_LENGTH = 30f;
+        #endregion
+
         public enum RopeType
         {
             ELASTIC, STATIC
         }
 
+        // Composition - delegate to specialized classes
+        private BananaGunPhysics physics;
+        private BananaGunVisuals visuals;
+
+        // References
         public Transform holster;
         private GameObject openModel, closedModel;
         private LineRenderer rope, laser;
-        private bool isGrappling;
-        private float baseLaserWidth, baseRopeWidth;
-        Vector3 hitPosition;
+
+        // Configuration (set by parent GrapplingHooks module)
         public RopeType ropeType;
-        public float
-            pullForce = 10f,
-            steerForce = 5f,
-            maxLength = 30f;
+        public float pullForce = DEFAULT_PULL_FORCE;
+        public float steerForce = DEFAULT_STEER_FORCE;
+        public float maxLength = DEFAULT_MAX_LENGTH;
 
         protected override void Awake()
         {
             base.Awake();
-            LocalPosition = new Vector3(.55f, 0, .85f);
+            LocalPosition = GUN_MODEL_LOCAL_POSITION;
+
+            // Find visual components - BananaGun owns hierarchy knowledge
             openModel = transform.Find("Banana Gun Open").gameObject;
             closedModel = transform.Find("Banana Gun Closed").gameObject;
-            //baseModelOffsetClosed = closedModel.transform.localPosition;
-            //baseModelOffsetOpen = openModel.transform.localPosition;
             rope = openModel.GetComponentInChildren<LineRenderer>();
-            rope.useWorldSpace = false;
-            baseRopeWidth = rope.startWidth;
             laser = closedModel.GetComponentInChildren<LineRenderer>();
-            laser.useWorldSpace = false;
-            baseLaserWidth = laser.startWidth;
+
+            // Initialize composed classes with dependency injection
+            physics = new BananaGunPhysics(Player.Instance.bodyCollider.attachedRigidbody);
+            visuals = new BananaGunVisuals(openModel, closedModel, rope, laser);
         }
 
         public void Holster(Transform holster)
@@ -210,11 +249,9 @@ namespace Bark.Modules.Movement
             transform.localPosition = Vector3.zero;
             transform.localRotation = Quaternion.identity;
             transform.localScale = Vector3.one;
-            if (laser)
-                laser.enabled = false;
+            visuals.HideLaser();
         }
 
-        SpringJoint joint;
         public override void OnActivate(BarkInteractor interactor)
         {
             base.OnActivate(interactor);
@@ -230,122 +267,80 @@ namespace Bark.Modules.Movement
 
         void StartSwing()
         {
-            RaycastHit hit;
-            Ray ray = new Ray(rope.transform.position, transform.forward);
-            UnityEngine.Physics.SphereCast(ray, .5f * Player.Instance.scale, out hit, maxLength, Teleport.layerMask);
-            if (!hit.transform) return;
+            Vector3? ropeOrigin = visuals.GetRopeOrigin();
+            if (!ropeOrigin.HasValue) return;
 
-            isGrappling = true;
-            Open();
-            rope.SetPosition(0, rope.transform.position);
-            rope.SetPosition(1, hit.point);
-            hitPosition = hit.point;
+            Vector3? hitPoint = TryGetGrapplePoint(ropeOrigin.Value);
+            if (!hitPoint.HasValue) return;
 
-            joint = Player.Instance.gameObject.AddComponent<SpringJoint>();
-            joint.autoConfigureConnectedAnchor = false;
-            joint.connectedAnchor = hitPosition;
-
-            float distanceFromPoint = Vector3.Distance(rope.transform.position, hitPosition);
-
-            // the distance grapple will try to keep from grapple point. 
-            switch (ropeType)
-            {
-                case RopeType.ELASTIC:
-                    joint.maxDistance = 0.8f;
-                    joint.minDistance = 0.25f;
-                    joint.spring = pullForce;
-                    joint.damper = 7f;
-                    joint.massScale = 4.5f;
-                    break;
-                case RopeType.STATIC:
-                    joint.maxDistance = distanceFromPoint;
-                    joint.minDistance = distanceFromPoint;
-                    joint.spring = pullForce * 2;
-                    joint.damper = 100f;
-                    joint.massScale = 4.5f;
-                    break;
-            }
+            visuals.SetGrappleState(true);
+            physics.StartGrapple(hitPoint.Value, ropeType, pullForce, ropeOrigin.Value);
         }
 
+        /// <summary>
+        /// Performs a raycast to find a valid grapple point.
+        /// </summary>
+        /// <returns>The hit point if found, null otherwise</returns>
+        private Vector3? TryGetGrapplePoint(Vector3 origin)
+        {
+            Ray ray = new Ray(origin, transform.forward);
+            if (UnityEngine.Physics.SphereCast(ray, GRAPPLE_RAYCAST_RADIUS * Player.Instance.scale,
+                out RaycastHit hit, maxLength, Teleport.layerMask))
+            {
+                return hit.point;
+            }
+            return null;
+        }
 
         void FixedUpdate()
         {
-            if (Selected && !isGrappling && Activated) { StartSwing(); return; }
-            if (isGrappling)
+            if (Selected && !physics.IsGrappling && Activated)
             {
-                var rigidBody = Player.Instance.bodyCollider.attachedRigidbody;
-                rigidBody.linearVelocity +=
-                    transform.forward *
-                    steerForce * Time.fixedDeltaTime * Player.Instance.scale;
+                StartSwing();
+                return;
+            }
+
+            if (physics.IsGrappling)
+            {
+                physics.ApplySteering(transform.forward, steerForce, Player.Instance.scale);
             }
         }
 
         void UpdateLineRenderer()
         {
-            if (!isGrappling && Selected)
+            if (!physics.IsGrappling && Selected)
             {
-                RaycastHit hit;
-                Ray ray = new Ray(rope.transform.position, transform.forward);
-                UnityEngine.Physics.SphereCast(ray, .5f * Player.Instance.scale, out hit, maxLength, Teleport.layerMask);
-                if (!hit.transform)
-                {
-                    laser.enabled = false;
-                    return;
-                }
-                Vector3
-                    start = Vector3.zero,
-                    end = laser.transform.InverseTransformPoint(hit.point);
-
-                laser.enabled = true;
-                laser.SetPosition(0, start);
-                laser.SetPosition(1, end);
-                laser.startWidth = baseLaserWidth * Player.Instance.scale;
-                laser.endWidth = baseLaserWidth * Player.Instance.scale;
+                // Show targeting laser
+                Vector3? ropeOrigin = visuals.GetRopeOrigin();
+                Vector3? hitPoint = ropeOrigin.HasValue ? TryGetGrapplePoint(ropeOrigin.Value) : null;
+                visuals.UpdateLaser(hitPoint);
             }
-            else if (isGrappling)
+            else if (physics.IsGrappling)
             {
-                Vector3
-                    start = Vector3.zero,
-                    end = rope.transform.InverseTransformPoint(hitPosition);
-                rope.SetPosition(0, start);
-                rope.SetPosition(1, end);
-                rope.startWidth = baseRopeWidth * Player.Instance.scale;
-                rope.endWidth = baseRopeWidth * Player.Instance.scale;
+                // Show grapple rope
+                visuals.UpdateRope(physics.GrapplePoint);
             }
         }
 
         public override void OnDeselect(BarkInteractor interactor)
         {
             base.OnDeselect(interactor);
-            laser.enabled = false;
+            visuals.HideLaser();
             Holster(holster);
-
         }
 
         public void SetupInteraction()
         {
             this.throwOnDetach = false;
             gameObject.layer = BarkInteractor.InteractionLayer;
-            if (openModel)
-                openModel.layer = BarkInteractor.InteractionLayer;
-            if (closedModel)
-                closedModel.layer = BarkInteractor.InteractionLayer;
-        }
-
-        void Open()
-        {
-            openModel?.SetActive(true);
-            closedModel?.SetActive(false);
-            GorillaTagger.Instance.offlineVRRig.PlayHandTapLocal(96, false, 0.05f);
+            visuals.SetInteractionLayer(BarkInteractor.InteractionLayer);
         }
 
         void Close()
         {
-            openModel?.SetActive(false);
-            closedModel?.SetActive(true);
+            visuals.SetGrappleState(false);
             Activated = false;
-            isGrappling = false;
-            joint?.Obliterate();
+            physics.EndGrapple();
         }
 
         private void OnEnable()
@@ -361,7 +356,7 @@ namespace Bark.Modules.Movement
         protected override void OnDestroy()
         {
             base.OnDestroy();
-            joint?.Obliterate();
+            physics?.Cleanup();
         }
     }
 }
