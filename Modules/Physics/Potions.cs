@@ -32,10 +32,12 @@ namespace Bark.Modules.Physics
         private const float MinGrowPitch = 1f;
         private const float MaxGrowPitch = 0.5f;
 
+        // Holster positioning relative to player body
+        private static readonly Vector3 HOLSTER_OFFSET = new Vector3(0.15f, -0.15f, 0.15f);
+
         private GameObject bottlePrefab, shrinkPotion, growPotion;
         private Material shrinkMaterial, growMaterial;
         private Transform holsterL, holsterR;
-        private Vector3 holsterOffset = new Vector3(0.15f, -0.15f, 0.15f);
         public static SizeChanger sizeChanger;
         public static Traverse sizeChangerTraverse, minScale, maxScale;
         public static Potions Instance;
@@ -114,9 +116,9 @@ namespace Bark.Modules.Physics
                 holster.SetParent(Player.Instance.bodyCollider.transform, false);
                 holster.localScale = Vector3.one;
                 var offset = new Vector3(
-                    holsterOffset.x * (isLeft ? -1 : 1),
-                    holsterOffset.y,
-                    holsterOffset.z
+                    HOLSTER_OFFSET.x * (isLeft ? -1 : 1),
+                    HOLSTER_OFFSET.y,
+                    HOLSTER_OFFSET.z
                 );
                 holster.localPosition = offset;
 
@@ -294,6 +296,16 @@ namespace Bark.Modules.Physics
 
     public class SizePotion : BarkGrabbable
     {
+        #region Constants
+        // Potion positioning relative to hand
+        private static readonly Vector3 POTION_LOCAL_POSITION = new Vector3(0.55f, 0f, 0.425f);
+        private static readonly Vector3 POTION_LOCAL_ROTATION = new Vector3(8f, 0f, 0f);
+
+        // Mouth detection for drinking
+        private static readonly Vector3 MOUTH_OFFSET = new Vector3(0f, -0.05f, 0.1f);
+        private const float DRINKING_RANGE = 0.15f;
+        #endregion
+
         public Transform holster;
         Vector3 corkOffset, corkScale;
         Cork cork;
@@ -318,8 +330,8 @@ namespace Bark.Modules.Physics
                 catch (Exception e) { Logging.Exception(e); }
                 corkOffset = cork.transform.localPosition;
                 corkScale = cork.transform.localScale;
-                this.LocalPosition = new Vector3(0.55f, 0, 0.425f);
-                this.LocalRotation = new Vector3(8, 0, 0);
+                this.LocalPosition = POTION_LOCAL_POSITION;
+                this.LocalRotation = POTION_LOCAL_ROTATION;
                 this.throwOnDetach = false;
                 this.OnSelectExit += (_, __) =>
                 {
@@ -348,12 +360,11 @@ namespace Bark.Modules.Physics
                 wasFlipped = isFlipped;
 
 
-                mouthPosition = Player.Instance.headCollider.transform.TransformPoint(new Vector3(0, -.05f, .1f));
+                mouthPosition = Player.Instance.headCollider.transform.TransformPoint(MOUTH_OFFSET);
                 bottlePosition = transform.position;
 
-                float range = .15f;
                 Vector3 delta = bottlePosition - mouthPosition;
-                inRange = Vector3.Dot(delta, Vector3.up) > 0f && delta.magnitude < range * Player.Instance.scale;
+                inRange = Vector3.Dot(delta, Vector3.up) > 0f && delta.magnitude < DRINKING_RANGE * Player.Instance.scale;
                 if (isFlipped && inRange)
                 {
                     if(!gulp.isPlaying)
@@ -433,6 +444,14 @@ namespace Bark.Modules.Physics
 
     public class Cork : BarkGrabbable
     {
+        #region Constants
+        // Cork positioning relative to hand
+        private static readonly Vector3 CORK_LOCAL_POSITION = new Vector3(0.5f, 0.5f, 0.425f);
+        private static readonly Vector3 CORK_LOCAL_ROTATION = new Vector3(8f, 0f, 0f);
+
+        // Pop physics
+        private const float POP_VELOCITY = 2.5f;
+        #endregion
 
         public Rigidbody rb;
         AudioSource popSource;
@@ -440,8 +459,8 @@ namespace Bark.Modules.Physics
         protected override void Awake()
         {
             base.Awake();
-            this.LocalPosition = new Vector3(0.5f, .5f, 0.425f);
-            this.LocalRotation = new Vector3(8, 0, 0);
+            this.LocalPosition = CORK_LOCAL_POSITION;
+            this.LocalRotation = CORK_LOCAL_ROTATION;
             this.throwOnDetach = true;
             rb = this.GetComponent<Rigidbody>();
             rb.isKinematic = true;
@@ -460,7 +479,7 @@ namespace Bark.Modules.Physics
         {
             transform.SetParent(null);
             rb.isKinematic = false;
-            rb.linearVelocity = this.transform.up * 2.5f;
+            rb.linearVelocity = this.transform.up * POP_VELOCITY;
             popSource.Play();
         }
     }

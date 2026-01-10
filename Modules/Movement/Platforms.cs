@@ -323,6 +323,17 @@ namespace Bark.Modules.Movement
 
     public class NetworkedPlatformsHandler : MonoBehaviour
     {
+        #region Constants
+        // Platform positioning relative to hands (raw values divided by scale divisor)
+        private static readonly Vector3 LEFT_PLATFORM_OFFSET = new Vector3(-12f, 18f, -10f);
+        private static readonly Vector3 RIGHT_PLATFORM_OFFSET = new Vector3(12f, 18f, 10f);
+        private const float PLATFORM_OFFSET_DIVISOR = 200f;
+
+        // Platform rotation relative to hands
+        private static readonly Vector3 LEFT_PLATFORM_ROTATION = new Vector3(215f, 0f, -15f);
+        private static readonly Vector3 RIGHT_PLATFORM_ROTATION = new Vector3(-45f, -25f, -190f);
+        #endregion
+
         public GameObject platformLeft, platformRight;
         public NetworkedPlayer networkedPlayer;
 
@@ -372,16 +383,16 @@ namespace Bark.Modules.Movement
             {
                 var leftHand = networkedPlayer.rig.leftHandTransform;
                 platformLeft.SetActive(true);
-                platformLeft.transform.position = leftHand.TransformPoint(new Vector3(-12, 18, -10) / 200f);
-                platformLeft.transform.rotation = leftHand.transform.rotation * Quaternion.Euler(215, 0, -15);
+                platformLeft.transform.position = leftHand.TransformPoint(LEFT_PLATFORM_OFFSET / PLATFORM_OFFSET_DIVISOR);
+                platformLeft.transform.rotation = leftHand.transform.rotation * Quaternion.Euler(LEFT_PLATFORM_ROTATION);
                 platformLeft.transform.localScale = Vector3.one * networkedPlayer.rig.scaleFactor;
             }
             else
             {
                 var rightHand = networkedPlayer.rig.rightHandTransform;
                 platformRight.SetActive(true);
-                platformRight.transform.position = rightHand.TransformPoint(new Vector3(12, 18, 10) / 200f);
-                platformRight.transform.rotation = rightHand.transform.rotation * Quaternion.Euler(-45, -25, -190);
+                platformRight.transform.position = rightHand.TransformPoint(RIGHT_PLATFORM_OFFSET / PLATFORM_OFFSET_DIVISOR);
+                platformRight.transform.rotation = rightHand.transform.rotation * Quaternion.Euler(RIGHT_PLATFORM_ROTATION);
                 platformRight.transform.localScale = Vector3.one * networkedPlayer.rig.scaleFactor;
             }
         }
