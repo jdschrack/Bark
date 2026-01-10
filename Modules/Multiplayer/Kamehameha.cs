@@ -1,4 +1,5 @@
 ﻿using GorillaLocomotion;
+using Player = GorillaLocomotion.GTPlayer;
 using Bark.Extensions;
 using Bark.GUI;
 using Bark.Gestures;
@@ -55,7 +56,7 @@ namespace Bark.Modules.Multiplayer
             isCharging = true;
             orb.gameObject.SetActive(true);
             orbBody.isKinematic = true;
-            orbBody.velocity = Vector3.zero;
+            orbBody.linearVelocity = Vector3.zero;
             GorillaTagger.Instance.offlineVRRig.PlayHandTapLocal(Random.Range(40, 56), false, 0.1f);
             Transform
                 leftHand = GestureTracker.Instance.leftPalmInteractor.transform,

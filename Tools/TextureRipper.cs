@@ -19,7 +19,7 @@ namespace Bark.Tools
             try
             {
                 step = "Locating renderers";
-                Renderer[] renderers = GameObject.FindObjectsOfType<Renderer>();
+                Renderer[] renderers = GameObject.FindObjectsByType<Renderer>(FindObjectsSortMode.None);
                 Logging.Debug("Found", renderers.Length, "renderers");
                 step = "Looping through renderers";
                 List<Texture> knownTextures = new List<Texture>();

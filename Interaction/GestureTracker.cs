@@ -1,6 +1,7 @@
 ﻿using Bark.Extensions;
 using Bark.Tools;
 using GorillaLocomotion;
+using Player = GorillaLocomotion.GTPlayer;
 using HarmonyLib;
 using System;
 using System.Collections.Generic;
@@ -338,7 +339,7 @@ namespace Bark.Gestures
         }
         public XRController GetController(bool isLeft)
         {
-            foreach (var controller in FindObjectsOfType<XRController>())
+            foreach (var controller in FindObjectsByType<XRController>(FindObjectsSortMode.None))
             {
                 if (isLeft && controller.name.ToLowerInvariant().Contains("left"))
                 {
@@ -445,7 +446,6 @@ namespace Bark.Gestures
         public bool rightControllerStickButton, leftControllerStickButton;
         public Vector2 rightControllerStickAxis, leftControllerStickAxis;
         public static ControllerInputPollerExt Instance;
-        bool steam;
 
         public ControllerInputPollerExt()
         {

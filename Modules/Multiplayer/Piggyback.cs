@@ -3,6 +3,7 @@ using Bark.Gestures;
 using Bark.Patches;
 using Bark.Modules.Physics;
 using GorillaLocomotion;
+using Player = GorillaLocomotion.GTPlayer;
 using UnityEngine;
 using UnityEngine.XR;
 using Bark.Extensions;

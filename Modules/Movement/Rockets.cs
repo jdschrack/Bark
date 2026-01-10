@@ -5,6 +5,7 @@ using Bark.GUI;
 using Bark.Tools;
 using Bark.Extensions;
 using GorillaLocomotion;
+using Player = GorillaLocomotion.GTPlayer;
 using BepInEx.Configuration;
 using Bark.Interaction;
 using Random = UnityEngine.Random;
@@ -183,7 +184,7 @@ namespace Bark.Modules.Movement
                 player.AddForce(force);
             else
             {
-                rb.velocity += force * 10;
+                rb.linearVelocity += force * 10;
                 force = Vector3.zero;
                 transform.Rotate(Random.insideUnitSphere);
             }
@@ -196,7 +197,7 @@ namespace Bark.Modules.Movement
         public override void OnDeselect(BarkInteractor interactor)
         {
             base.OnDeselect(interactor);
-            rb.velocity = Player.Instance.currentVelocity;
+            rb.linearVelocity = Player.Instance.GetCurrentVelocity();
         }
 
         public void SetupInteraction()

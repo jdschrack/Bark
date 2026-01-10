@@ -2,6 +2,7 @@
 // Used without permission, but what are you gonna do, sue me?
 
 using GorillaLocomotion;
+using Player = GorillaLocomotion.GTPlayer;
 using HarmonyLib;
 using System.Reflection;
 using UnityEngine;
@@ -11,7 +12,7 @@ using Bark.Tools;
 
 namespace Bark.Patches
 {
-    [HarmonyPatch(typeof(Player))]
+    [HarmonyPatch(typeof(GTPlayer))]
     [HarmonyPatch("LateUpdate", MethodType.Normal)]
     internal class TeleportPatch
     {
@@ -21,7 +22,7 @@ namespace Bark.Patches
         private static float _teleportRotation;
         private static bool _killVelocity;
 
-        internal static bool Prefix(Player __instance, ref Vector3 ___lastPosition, ref Vector3[] ___velocityHistory, ref Vector3 ___lastHeadPosition, ref Vector3 ___lastLeftHandPosition, ref Vector3 ___lastRightHandPosition, ref Vector3 ___currentVelocity, ref Vector3 ___denormalizedVelocityAverage)
+        internal static bool Prefix(GTPlayer __instance, ref Vector3 ___lastPosition, ref Vector3[] ___velocityHistory, ref Vector3 ___lastHeadPosition, ref Vector3 ___lastLeftHandPosition, ref Vector3 ___lastRightHandPosition, ref Vector3 ___currentVelocity, ref Vector3 ___denormalizedVelocityAverage)
         {
             try
             {
@@ -34,7 +35,7 @@ namespace Bark.Patches
                         Vector3 correctedPosition = _teleportPosition - __instance.bodyCollider.transform.position + __instance.transform.position;
 
                         if(_killVelocity)
-                            playerRigidBody.velocity = Vector3.zero;
+                            playerRigidBody.linearVelocity = Vector3.zero;
 
                         __instance.transform.position = correctedPosition;
                         if (_rotate)

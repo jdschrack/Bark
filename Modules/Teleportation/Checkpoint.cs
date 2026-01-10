@@ -1,4 +1,5 @@
 ﻿using GorillaLocomotion;
+using Player = GorillaLocomotion.GTPlayer;
 using Bark.Extensions;
 using Bark.Gestures;
 using Bark.GUI;
@@ -63,7 +64,7 @@ namespace Bark.Modules.Teleportation
 
                 float chargeScale = MathExtensions.Map(ChargeTime.Value, 0, 10, 0f, 1f);
                 float scale = Mathf.Lerp(0, Player.Instance.scale, (Time.time - startTime) / chargeScale);
-                checkpointMarker.position = Player.Instance.leftControllerTransform.position + Vector3.up * .15f * Player.Instance.scale;
+                checkpointMarker.position = Player.Instance.GetLeftControllerTransform().position + Vector3.up * .15f * Player.Instance.scale;
                 checkpointMarker.localScale = Vector3.one * scale;
                 if (Mathf.Abs(scale - Player.Instance.scale) < .01f)
                 {
@@ -98,7 +99,7 @@ namespace Bark.Modules.Teleportation
             Vector3 startPos, endPos;
             while (GestureTracker.Instance.rightTrigger.pressed && pointSet)
             {
-                startPos = Player.Instance.rightControllerTransform.position;
+                startPos = Player.Instance.GetRightControllerTransform().position;
                 bananaLine.SetPosition(1, startPos);
                 float chargeScale = MathExtensions.Map(ChargeTime.Value, 0, 10, 0f, 1f);
                 endPos = Vector3.Lerp(startPos, checkpointMarker.transform.position, (Time.time - startTime) / chargeScale);

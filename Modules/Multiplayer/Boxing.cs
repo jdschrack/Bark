@@ -8,7 +8,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using NetworkPlayer = Photon.Realtime.Player;
-using Player = GorillaLocomotion.Player;
+using Player = GorillaLocomotion.GTPlayer;
 namespace Bark.Modules.Multiplayer
 {
     public class BoxingGlove : MonoBehaviour
@@ -186,7 +186,7 @@ namespace Bark.Modules.Multiplayer
             if (force.magnitude < .5f * Player.Instance.scale) return;
             force.Normalize();
             force *= forceMultiplier;
-            Player.Instance.bodyCollider.attachedRigidbody.velocity += force;
+            Player.Instance.bodyCollider.attachedRigidbody.linearVelocity += force;
             lastPunch = Time.time;
             GestureTracker.Instance.HapticPulse(false);
             GestureTracker.Instance.HapticPulse(true);

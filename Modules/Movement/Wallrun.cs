@@ -1,5 +1,7 @@
 ﻿using GorillaLocomotion;
+using Player = GorillaLocomotion.GTPlayer;
 using Bark.Tools;
+using Bark.Extensions;
 using UnityEngine;
 using System.Reflection;
 using Bark.Modules.Physics;
@@ -27,7 +29,7 @@ namespace Bark.Modules.Movement
         protected void FixedUpdate()
         {
             Player player = Player.Instance;
-            if (player.wasLeftHandTouching || player.wasRightHandTouching)
+            if (player.WasLeftHandTouching() || player.WasRightHandTouching())
             {
                 FieldInfo fieldInfo = typeof(Player).GetField("lastHitInfoHand", BindingFlags.NonPublic | BindingFlags.Instance);
                 hit = (RaycastHit)fieldInfo.GetValue(player);

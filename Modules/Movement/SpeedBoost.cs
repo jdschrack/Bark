@@ -2,7 +2,10 @@
 using Bark.Tools;
 using BepInEx.Configuration;
 using GorillaLocomotion;
+using GorillaNetworking;
+using Player = GorillaLocomotion.GTPlayer;
 using System;
+using HarmonyLib;
 
 namespace Bark.Modules
 {
@@ -12,26 +15,50 @@ namespace Bark.Modules
         public static float baseVelocityLimit, scale = 1.5f;
         public static bool active = false;
 
-        void FixedUpdate()
+        /// <summary>
+        /// Gets the current game mode string using Traverse to access potentially private API.
+        /// Returns the game mode or null if not available.
+        /// </summary>
+        private static string GetGameMode()
         {
-            string progress = "";
             try
             {
-                progress = "Getting Gamemode\n";
-                var gameMode = GorillaGameManager.instance?.GameMode();
-                progress = "Checking status\n";
+                // Try using GorillaComputer.instance.currentGameMode first (most reliable)
+                if (GorillaComputer.instance != null)
+                {
+                    // currentGameMode might be a WatchableStringSO now, so use Traverse
+                    var currentGameModeField = Traverse.Create(GorillaComputer.instance).Field("currentGameMode");
+                    var value = currentGameModeField.GetValue();
+                    if (value is string strValue)
+                        return strValue;
+                    // If it's a WatchableStringSO, try to get its Value property
+                    if (value != null)
+                    {
+                        var valueProperty = Traverse.Create(value).Property("Value");
+                        return valueProperty.GetValue<string>();
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                Logging.Exception(e);
+            }
+            return null;
+        }
+
+        void FixedUpdate()
+        {
+            try
+            {
+                var gameMode = GetGameMode();
                 if (active && (gameMode is null || gameMode == "NONE" || gameMode == "CASUAL"))
                 {
-                    progress = "Setting multiplier\n";
                     Player.Instance.jumpMultiplier = 1.3f * scale;
                     Player.Instance.maxJumpSpeed = 8.5f * scale;
                 }
             }
             catch (Exception e)
             {
-                Logging.Debug("GorillaGameManager.instance is null:", GorillaGameManager.instance is null);
-                Logging.Debug("GorillaGameManager.instance.GameMode() is null:", GorillaGameManager.instance?.GameMode() is null);
-                Logging.Debug(progress);
                 Logging.Exception(e);
             }
         }

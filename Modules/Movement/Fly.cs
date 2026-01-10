@@ -1,5 +1,5 @@
 ﻿using UnityEngine;
-using Player = GorillaLocomotion.Player;
+using Player = GorillaLocomotion.GTPlayer;
 using Bark.GUI;
 using BepInEx.Configuration;
 using Bark.Extensions;
@@ -39,7 +39,7 @@ namespace Bark.Modules.Movement
                 y * Vector3.up +
                 inputDirection.z * playerForward;
             velocity *= Player.Instance.scale * speedScale;
-            rb.velocity = Vector3.Lerp(rb.velocity, velocity, acceleration);
+            rb.linearVelocity = Vector3.Lerp(rb.linearVelocity, velocity, acceleration);
         }
 
         public override string GetDisplayName()

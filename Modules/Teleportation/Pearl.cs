@@ -5,6 +5,7 @@ using Bark.GUI;
 using Bark.Tools;
 using Bark.Extensions;
 using GorillaLocomotion;
+using Player = GorillaLocomotion.GTPlayer;
 using BepInEx.Configuration;
 using Bark.Interaction;
 using Bark.Patches;
@@ -114,7 +115,7 @@ namespace Bark.Modules.Teleportation
         Rigidbody rigidbody;
         AudioSource audioSource;
         LayerMask mask;
-        bool thrown = false,landed = true;
+        bool thrown = false;
         Material monkeMat, trailMat;
         VRRig playerRig;
         ParticleSystem trail;
@@ -175,7 +176,7 @@ namespace Bark.Modules.Teleportation
         {
             if (!thrown) return;
             ray.origin = this.transform.position;
-            ray.direction = this.rigidbody.velocity;
+            ray.direction = this.rigidbody.linearVelocity;
             RaycastHit hit;
             UnityEngine.Physics.Raycast(ray, out hit, ray.direction.magnitude, mask);
 
@@ -184,7 +185,6 @@ namespace Bark.Modules.Teleportation
                 TeleportPatch.TeleportPlayer(hit.point + hit.normal * Player.Instance.scale / 2f);
                 audioSource.Play();
                 thrown = false;
-                landed = true;
                 trail.Stop();
                 this.transform.position = Vector3.down * 1000;
             }

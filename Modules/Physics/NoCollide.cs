@@ -4,6 +4,7 @@ using Bark.GUI;
 using Bark.Patches;
 using Bark.Tools;
 using GorillaLocomotion;
+using Player = GorillaLocomotion.GTPlayer;
 using UnityEngine;
 using Bark.Modules.Multiplayer;
 using Bark.Modules.Movement;

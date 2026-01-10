@@ -1,5 +1,6 @@
 ﻿using HarmonyLib;
 using GorillaLocomotion;
+using Player = GorillaLocomotion.GTPlayer;
 using System;
 using Bark.Tools;
 using Bark.Modules.Physics;
@@ -15,7 +16,7 @@ namespace Bark.Patches
     [HarmonyPatch]
     public class VRRigCachePatches
     {
-        public static Action<Player, VRRig> OnRigCached;
+        public static Action<GTPlayer, VRRig> OnRigCached;
 
         static IEnumerable<MethodBase> TargetMethods()
         {
@@ -24,7 +25,7 @@ namespace Bark.Patches
             };
         }
 
-        private static void Prefix(Player player, VRRig vrrig)
+        private static void Prefix(GTPlayer player, VRRig vrrig)
         {
             OnRigCached?.Invoke(player, vrrig);
         }

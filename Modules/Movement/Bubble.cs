@@ -1,4 +1,5 @@
 ﻿using GorillaLocomotion;
+using Player = GorillaLocomotion.GTPlayer;
 using Bark.Tools;
 using System;
 using UnityEngine;
@@ -141,8 +142,8 @@ namespace Bark.Modules.Movement
                 bubble.AddComponent<GorillaSurfaceOverride>().overrideIndex = 110;
                 bubble.GetComponent<Collider>().enabled = false;
                 rb = Player.Instance.bodyCollider.attachedRigidbody;
-                baseDrag = rb.drag;
-                rb.drag = 1;
+                baseDrag = rb.linearDamping;
+                rb.linearDamping = 1;
             }
             catch (Exception e) { Logging.Exception(e); }
         }
@@ -153,7 +154,7 @@ namespace Bark.Modules.Movement
                 Sounds.Play(84, 2);
             bubble?.Obliterate();
             if (rb)
-                rb.drag = baseDrag;
+                rb.linearDamping = baseDrag;
         }
         protected override void ReloadConfiguration()
         {

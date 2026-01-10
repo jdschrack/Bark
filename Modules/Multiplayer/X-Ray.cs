@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using GorillaLocomotion;
+using Player = GorillaLocomotion.GTPlayer;
 
 namespace Bark.Modules.Multiplayer
 {
