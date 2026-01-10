@@ -58,6 +58,11 @@ namespace Bark
         {
             path = FormatPath(path);
             Stream stream = Assembly.GetExecutingAssembly().GetManifestResourceStream(path);
+            if (stream == null)
+            {
+                Console.WriteLine($"Failed to load embedded resource: {path}");
+                return null;
+            }
             AssetBundle bundle = AssetBundle.LoadFromStream(stream);
             stream.Close();
             return bundle;

@@ -373,9 +373,9 @@ namespace Bark.Modules.Movement
             {
                 var rightHand = networkedPlayer.rig.rightHandTransform;
                 platformRight.SetActive(true);
-                platformRight.transform.localPosition = rightHand.TransformPoint(new Vector3(12, 18, 10) / 200f);
-                platformRight.transform.localRotation = rightHand.transform.rotation * Quaternion.Euler(-45, -25, -190);
-                platformLeft.transform.localScale = Vector3.one * networkedPlayer.rig.scaleFactor;
+                platformRight.transform.position = rightHand.TransformPoint(new Vector3(12, 18, 10) / 200f);
+                platformRight.transform.rotation = rightHand.transform.rotation * Quaternion.Euler(-45, -25, -190);
+                platformRight.transform.localScale = Vector3.one * networkedPlayer.rig.scaleFactor;
             }
         }
 

@@ -32,16 +32,25 @@ namespace Bark.Extensions
             }
             else if (entry.SettingType == typeof(string))
             {
-                var acceptableValues = ((AcceptableValueList<string>)entry.Description.AcceptableValues).AcceptableValues;
-                for (int i = 0; i < acceptableValues.Length; i++)
+                if (entry.Description.AcceptableValues is AcceptableValueList<string> acceptableValueList)
                 {
-                    if (acceptableValues[i] == (string)entry.BoxedValue)
-                        return new ConfigValueInfo
-                        {
-                            AcceptableValues = acceptableValues,
-                            InitialValue = i
-                        };
+                    var acceptableValues = acceptableValueList.AcceptableValues;
+                    for (int i = 0; i < acceptableValues.Length; i++)
+                    {
+                        if (acceptableValues[i] == (string)entry.BoxedValue)
+                            return new ConfigValueInfo
+                            {
+                                AcceptableValues = acceptableValues,
+                                InitialValue = i
+                            };
+                    }
                 }
+                // String config without AcceptableValueList - return just the current value
+                return new ConfigValueInfo
+                {
+                    AcceptableValues = new object[] { entry.BoxedValue },
+                    InitialValue = 0
+                };
             }
             throw new Exception($"Unknown config type {entry.SettingType}");
         }

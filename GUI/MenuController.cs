@@ -155,7 +155,7 @@ namespace Bark.GUI
 
             // The potions tutorial needs to be updated frequently to keep the current size
             // up-to-date, even when the mod is disabled
-            if (BarkModule.LastEnabled && BarkModule.LastEnabled == Potions.Instance)
+            if (helpText != null && BarkModule.LastEnabled && BarkModule.LastEnabled == Potions.Instance)
             {
                 helpText.text = Potions.Instance.Tutorial();
             }
@@ -293,7 +293,8 @@ namespace Bark.GUI
             {
                 debugger = isPressed;
                 Logging.Debug("Debugger", debugger ? "active" : "inactive");
-                Plugin.debugText.text = "";
+                if (Plugin.debugText != null)
+                    Plugin.debugText.text = "";
             });
 
             AddDebugButton("Close game", (btn, isPressed) =>

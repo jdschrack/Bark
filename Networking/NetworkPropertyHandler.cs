@@ -42,13 +42,17 @@ namespace Bark.Networking
             if (targetPlayer == PhotonNetwork.LocalPlayer) return;
             if (changedProps.ContainsKey(BarkModule.enabledModulesKey))
             {
-                networkedPlayers[targetPlayer].hasBark = true;
-                var enabledModules = (Dictionary<string, bool>)changedProps[BarkModule.enabledModulesKey];
+                if (!networkedPlayers.TryGetValue(targetPlayer, out var networkedPlayer))
+                    return; // Player not yet created, ignore property update
+                networkedPlayer.hasBark = true;
+                var enabledModules = (Hashtable)changedProps[BarkModule.enabledModulesKey];
                 //Logging.Debug(targetPlayer.NickName, "toggled mods:");
-                foreach (var mod in enabledModules)
+                foreach (var key in enabledModules.Keys)
                 {
-                    //Logging.Debug(mod.Value ? "  +" : "  -", mod.Key, mod.Value);
-                    OnPlayerModStatusChanged?.Invoke(targetPlayer, mod.Key, mod.Value);
+                    var modName = (string)key;
+                    var modEnabled = (bool)enabledModules[key];
+                    //Logging.Debug(modEnabled ? "  +" : "  -", modName, modEnabled);
+                    OnPlayerModStatusChanged?.Invoke(targetPlayer, modName, modEnabled);
                 }
             }
         }
@@ -87,13 +91,18 @@ namespace Bark.Networking
                 for (int i = 0; i < 10; i++)
                 {
                     rig = player.Rig();
-                    if (rig is null)
-                    {
-                        yield return new WaitForSeconds(.1f);
-                        continue;
-                    }
+                    if (rig != null)
+                        break;
+                    yield return new WaitForSeconds(.1f);
                 }
             }
+
+            if (rig is null)
+            {
+                Logging.Warning($"Failed to find rig for player {player?.NickName ?? "unknown"} after retries");
+                yield break;
+            }
+
             var np = rig.gameObject.GetOrAddComponent<NetworkedPlayer>();
             np.owner = player;
             np.rig = rig;
@@ -111,9 +120,12 @@ namespace Bark.Networking
             {
                 Logging.Debug(property.Key, ":", property.Value);
                 if ((string)property.Key == BarkModule.enabledModulesKey)
-                    foreach (var mod in (Dictionary<string, bool>)property.Value)
-                        if (mod.Value)
-                            Logging.Debug("    ", property.Key, "is enabled");
+                {
+                    var mods = (Hashtable)property.Value;
+                    foreach (var key in mods.Keys)
+                        if ((bool)mods[key])
+                            Logging.Debug("    ", key, "is enabled");
+                }
             }
 
             PhotonNetwork.LocalPlayer.SetCustomProperties(properties);

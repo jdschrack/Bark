@@ -59,6 +59,7 @@ namespace Bark.Networking
 
         public void FixedUpdate()
         {
+            if (rig == null) return;
             LeftThumbAmount = rig.leftThumb.calcT;
             RightThumbAmount = rig.rightThumb.calcT;
             LeftGripAmount = rig.leftMiddle.calcT;
