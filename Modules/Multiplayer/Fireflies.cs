@@ -277,18 +277,6 @@ namespace Bark.Modules.Multiplayer
             target.Obliterate();
         }
 
-        //public static ConfigEntry<int> PunchForce;
-        //public static void BindConfigEntries()
-        //{
-            //Logging.Debug("Binding", DisplayName, "to config");
-            //PunchForce = Plugin.configFile.Bind(
-            //    section: DisplayName,
-            //    key: "punch force",
-            //    defaultValue: 5,
-            //    description: "How much force will be applied to you when you get punched"
-            //);
-        //}
-
         public override string GetDisplayName()
         {
             return DisplayName;

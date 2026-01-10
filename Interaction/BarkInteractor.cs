@@ -143,5 +143,31 @@ namespace Bark.Gestures
             foreach (var grabbable in selected)
                 grabbable.OnPrimaryReleased(this);
         }
+
+        void OnDestroy()
+        {
+            var gt = GestureTracker.Instance;
+            if (gt == null) return;
+
+            var gripTracker = gt.GetInputTracker("grip", this.node);
+            var triggerTracker = gt.GetInputTracker("trigger", this.node);
+            var primaryTracker = gt.GetInputTracker("primary", this.node);
+
+            if (gripTracker != null)
+            {
+                gripTracker.OnPressed -= OnGrip;
+                gripTracker.OnReleased -= OnGripRelease;
+            }
+            if (triggerTracker != null)
+            {
+                triggerTracker.OnPressed -= OnTrigger;
+                triggerTracker.OnReleased -= OnTriggerRelease;
+            }
+            if (primaryTracker != null)
+            {
+                primaryTracker.OnPressed -= OnPrimary;
+                primaryTracker.OnReleased -= OnPrimaryRelease;
+            }
+        }
     }
 }
