@@ -24,7 +24,7 @@ namespace Bark.Modules.Movement
         // Configuration multipliers
         private const float POWER_MULTIPLIER = 2f;
         private const int DEFAULT_POWER = 5;
-        private const int DEFAULT_VOLUME = 10;
+        private const int DEFAULT_VOLUME_CONFIG = 10;
 
         // Volume config range
         private const int VOLUME_CONFIG_MIN = 0;
@@ -120,7 +120,11 @@ namespace Bark.Modules.Movement
             {
                 if (!rocket) continue;
                 rocket.power = Power.Value * POWER_MULTIPLIER;
-                rocket.volume = MathExtensions.Map(Volume.Value, VOLUME_CONFIG_MIN, VOLUME_CONFIG_MAX, VOLUME_OUTPUT_MIN, VOLUME_OUTPUT_MAX);
+                rocket.volume = Mathf.Clamp(
+                    MathExtensions.Map(Volume.Value, VOLUME_CONFIG_MIN, VOLUME_CONFIG_MAX, VOLUME_OUTPUT_MIN, VOLUME_OUTPUT_MAX),
+                    VOLUME_OUTPUT_MIN,
+                    VOLUME_OUTPUT_MAX
+                );
             }
         }
 
@@ -136,7 +140,7 @@ namespace Bark.Modules.Movement
             Volume = Plugin.configFile.Bind(
                 section: DisplayName,
                 key: "thruster volume",
-                defaultValue: DEFAULT_VOLUME,
+                defaultValue: DEFAULT_VOLUME_CONFIG,
                 description: "How loud the thrusters sound"
             );
         }
@@ -159,18 +163,17 @@ namespace Bark.Modules.Movement
         // Physics constants for unselected rocket behavior
         private const float UNSELECTED_VELOCITY_MULTIPLIER = 10f;
 
-        // Audio constants
-        private const float MAX_VOLUME_DISTANCE = 0f;
-        private const float MIN_VOLUME_DISTANCE = 20f;
-        private const float MAX_VOLUME = 0.5f;
-        private const float MIN_VOLUME = 0f;
+        // Audio distance attenuation
+        private const float AUDIO_FALLOFF_DISTANCE = 20f;
+        private const float MAX_VOLUME_GAIN = 0.5f;
+        private const float MIN_VOLUME_GAIN = 0f;
 
         // Default values
         private const float DEFAULT_POWER = 5f;
-        private const float DEFAULT_VOLUME = 0.2f;
+        private const float DEFAULT_VOLUME_MULTIPLIER = 0.2f;
         #endregion
 
-        public float power = DEFAULT_POWER, volume = DEFAULT_VOLUME;
+        public float power = DEFAULT_POWER, volume = DEFAULT_VOLUME_MULTIPLIER;
         public Vector3 force { get; private set; }
         bool isLeft;
         GestureTracker gt;
@@ -221,10 +224,10 @@ namespace Bark.Modules.Movement
                 force = Vector3.zero;
                 transform.Rotate(Random.insideUnitSphere);
             }
-            this.exhaustSound.volume = Mathf.Lerp(MAX_VOLUME, MIN_VOLUME, Vector3.Distance(
+            this.exhaustSound.volume = Mathf.Lerp(MAX_VOLUME_GAIN, MIN_VOLUME_GAIN, Vector3.Distance(
                 player.headCollider.transform.position,
                 transform.position
-            ) / MIN_VOLUME_DISTANCE) * volume;
+            ) / AUDIO_FALLOFF_DISTANCE) * volume;
         }
 
         public override void OnDeselect(BarkInteractor interactor)
