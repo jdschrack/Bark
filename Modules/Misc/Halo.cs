@@ -94,7 +94,6 @@ namespace Bark.Modules.Misc
 
         protected override void Cleanup()
         {
-            //foreach (var marker in FindObjectsOfType<HaloMarker>())
             Destroy(myMarker);
         }
 

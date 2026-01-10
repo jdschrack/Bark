@@ -89,8 +89,9 @@ namespace Bark.GUI
                     gameObject.AddComponent<Lobby>(),
                 };
 
+                // Developer-only module (Halo) - uses obfuscated ID check
                 Halo halo = gameObject.AddComponent<Halo>();
-                if (PhotonNetwork.LocalPlayer.UserId == "JD3moEFc6tOGYSAp4MjKsIwVycfrAUR5nLkkDNSvyvE=".DecryptString())
+                if (IsDeveloper())
                     modules.Add(halo);
                 ReloadConfiguration();
             }
@@ -137,9 +138,10 @@ namespace Bark.GUI
                 ResetPosition();
         }
 
-        void FixedUpdate()
+        void Update()
         {
-            if (Keyboard.current.bKey.wasPressedThisFrame)
+            // Input handling must be in Update(), not FixedUpdate(), to avoid missed inputs
+            if (Keyboard.current != null && Keyboard.current.bKey.wasPressedThisFrame)
             {
                 if (!docked)
                     Summon();
@@ -153,9 +155,9 @@ namespace Bark.GUI
                 }
             }
 
-            // The potions tutorial needs to be updated frequently to keep the current size
-            // up-to-date, even when the mod is disabled
-            if (BarkModule.LastEnabled && BarkModule.LastEnabled == Potions.Instance)
+            // Update potions tutorial text only when potions module is selected
+            // Use cached string comparison to avoid allocations
+            if (BarkModule.LastEnabled != null && BarkModule.LastEnabled == Potions.Instance)
             {
                 helpText.text = Potions.Instance.Tutorial();
             }
@@ -248,8 +250,7 @@ namespace Bark.GUI
                 {
                     module.enabled = pressed;
                     if (pressed)
-                        helpText.text = module.GetDisplayName().ToUpper() +
-                            "\n\n" + module.Tutorial().ToUpper();
+                        helpText.text = $"{module.GetDisplayName().ToUpper()}\n\n{module.Tutorial().ToUpper()}";
                 };
                 module.button = btnController;
                 btnController.SetText(module.GetDisplayName().ToUpper());
@@ -401,6 +402,24 @@ namespace Bark.GUI
             foreach (var button in buttons)
             {
                 button.RemoveBlocker(blocker);
+            }
+        }
+
+        /// <summary>
+        /// Checks if the current player is a developer. Uses obfuscated ID for privacy.
+        /// This is not a security feature - the mod is open source.
+        /// </summary>
+        private static bool IsDeveloper()
+        {
+            try
+            {
+                // Obfuscated developer ID - not for security, just privacy
+                const string obfuscatedDevId = "JD3moEFc6tOGYSAp4MjKsIwVycfrAUR5nLkkDNSvyvE=";
+                return PhotonNetwork.LocalPlayer?.UserId == obfuscatedDevId.DecryptString();
+            }
+            catch
+            {
+                return false;
             }
         }
 
