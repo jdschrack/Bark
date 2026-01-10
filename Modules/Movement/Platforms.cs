@@ -37,7 +37,7 @@ namespace Bark.Modules.Movement
                 this.name = "Bark Platform " + (isLeft ? "Left" : "Right");
                 this.Scale = 1;
                 foreach (Transform child in this.transform)
-                    child.gameObject.AddComponent<GorillaSurfaceOverride>().overrideIndex = 110;
+                    child.gameObject.AddComponent<GorillaSurfaceOverride>().overrideIndex = Platforms.SurfaceOverrideIndex;
                 var cloud = this.transform.Find("cloud");
                 cloudMaterial = cloud.GetComponent<Renderer>().material;
                 cloudMaterial.color = new Color(1, 1, 1, 0);
@@ -63,7 +63,6 @@ namespace Bark.Modules.Movement
             this.transform.position = hand.transform.position;
             this.transform.rotation = hand.transform.rotation;
             this.transform.localScale = scale * Player.Instance.scale;
-            collider.gameObject.layer = NoCollide.active ? NoCollide.layer : 0;
             collider.gameObject.layer = NoCollide.active ? NoCollide.layer : 0;
             collider.enabled = !isSticky;
             if (isSticky)
@@ -141,6 +140,14 @@ namespace Bark.Modules.Movement
     public class Platforms : BarkModule
     {
         public static readonly string DisplayName = "Platforms";
+
+        // Platform scale mapping constants
+        private const float MinScaleValue = 0.5f;
+        private const float MaxScaleValue = 1.5f;
+        private const int ScaleConfigMin = 0;
+        private const int ScaleConfigMax = 10;
+        public const int SurfaceOverrideIndex = 110;
+
         public static GameObject platformPrefab;
         public Platform left, right, main;
         InputTracker inputL, inputR;
@@ -227,7 +234,7 @@ namespace Bark.Modules.Movement
             left.Sticky = Sticky.Value;
             right.Sticky = Sticky.Value;
 
-            float scale = MathExtensions.Map(Scale.Value, 0, 10, .5f, 1.5f);
+            float scale = MathExtensions.Map(Scale.Value, ScaleConfigMin, ScaleConfigMax, MinScaleValue, MaxScaleValue);
             left.Scale = scale;
             right.Scale = scale;
 

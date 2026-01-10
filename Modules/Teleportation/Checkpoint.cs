@@ -133,20 +133,6 @@ namespace Bark.Modules.Teleportation
                 checkpointMarker.gameObject.SetActive(pointSet);
                 bananaLine = Instantiate(bananaLinePrefab).GetComponent<LineRenderer>();
                 markedTriggers = new List<GorillaTriggerBox>();
-                //foreach (var triggerBox in FindObjectsOfType<GorillaTriggerBox>())
-                //{
-                //    if (triggerBox?.gameObject?.GetComponent<CollisionObserver>()) continue;
-                //    var observer = triggerBox.gameObject.AddComponent<CollisionObserver>();
-                //    // Sometimes you just can't add a collision observer for some reason. If this happens, give up.
-                //    if (!triggerBox?.gameObject?.GetComponent<CollisionObserver>()) continue;
-
-                //    observer.OnTriggerStayed += (box, collider) =>
-                //    {
-                //        if (collider == Player.Instance.bodyCollider)
-                //            ClearCheckpoint();
-                //    };
-                //    markedTriggers.Add(triggerBox);
-                //}
                 GestureTracker.Instance.leftTrigger.OnPressed += Triggered;
                 GestureTracker.Instance.rightTrigger.OnPressed += Triggered;
             }

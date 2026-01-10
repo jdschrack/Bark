@@ -107,6 +107,22 @@ namespace Bark.Networking
             np.owner = player;
             np.rig = rig;
             networkedPlayers.Add(player, np);
+
+            // Replay any custom properties that arrived before player was created
+            if (player.CustomProperties != null && player.CustomProperties.ContainsKey(BarkModule.enabledModulesKey))
+            {
+                var enabledModules = player.CustomProperties[BarkModule.enabledModulesKey] as Hashtable;
+                if (enabledModules != null)
+                {
+                    np.hasBark = true;
+                    foreach (var key in enabledModules.Keys)
+                    {
+                        var modName = (string)key;
+                        var modEnabled = (bool)enabledModules[key];
+                        OnPlayerModStatusChanged?.Invoke(player, modName, modEnabled);
+                    }
+                }
+            }
         }
 
         float lastPropertyUpdate;

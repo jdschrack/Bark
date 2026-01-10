@@ -80,11 +80,9 @@ namespace Bark.Modules.Movement
 
         void HideLauncher()
         {
-            launcher.GetComponent<MeshRenderer>().enabled = false;;
+            launcher.GetComponent<MeshRenderer>().enabled = false;
             gunStartHook.SetActive(false);
             gunEndHook.SetActive(false);
-            //foreach (var system in smokeSystems)
-            //    system.gameObject.SetActive(false);
         }
 
         void Fire(InputTracker _)
