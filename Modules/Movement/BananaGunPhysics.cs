@@ -53,13 +53,16 @@ namespace Bark.Modules.Movement
         }
 
         /// <summary>
-        /// Ends the current grapple and disables the joint.
+        /// Ends the current grapple and destroys the joint.
         /// </summary>
         public void EndGrapple()
         {
             IsGrappling = false;
             if (joint != null)
-                joint.enabled = false;
+            {
+                joint.Obliterate();
+                joint = null;
+            }
         }
 
         /// <summary>
@@ -78,7 +81,7 @@ namespace Bark.Modules.Movement
 
         /// <summary>
         /// Ensures the SpringJoint exists on the player.
-        /// Creates one if it doesn't exist, or re-enables if disabled.
+        /// Creates one if it doesn't exist.
         /// </summary>
         private void EnsureJointExists()
         {
@@ -86,7 +89,6 @@ namespace Bark.Modules.Movement
             {
                 joint = Player.Instance.gameObject.AddComponent<SpringJoint>();
             }
-            joint.enabled = true;
         }
 
         /// <summary>

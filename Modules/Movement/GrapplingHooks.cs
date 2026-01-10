@@ -36,13 +36,13 @@ namespace Bark.Modules.Movement
         {
             if (Plugin.assetBundle == null)
             {
-                Logging.Error("AssetBundle is null. Cannot load 'Banana Gun'.");
+                Logging.Warning("AssetBundle is null. Cannot load 'Banana Gun'.");
                 return;
             }
             bananaGunPrefab = Plugin.assetBundle.LoadAsset<GameObject>("Banana Gun");
             if (bananaGunPrefab == null)
             {
-                Logging.Error("Failed to load 'Banana Gun' prefab from asset bundle.");
+                Logging.Warning("Failed to load 'Banana Gun' prefab from asset bundle.");
             }
         }
 
@@ -58,12 +58,12 @@ namespace Bark.Modules.Movement
                 if (bananaGunPrefab == null)
                 {
                     if (Plugin.assetBundle == null) {
-                        Logging.Error("AssetBundle is null. Cannot setup grappling hooks.");
+                        Logging.Warning("AssetBundle is null. Cannot setup grappling hooks.");
                         return;
                     }
                     bananaGunPrefab = Plugin.assetBundle.LoadAsset<GameObject>("Banana Gun");
                     if (bananaGunPrefab == null) {
-                        Logging.Error("Failed to load 'Banana Gun' prefab in Setup. Aborting setup.");
+                        Logging.Warning("Failed to load 'Banana Gun' prefab in Setup. Aborting setup.");
                         return;
                     }
                 }
@@ -79,11 +79,11 @@ namespace Bark.Modules.Movement
             }
             catch (ArgumentException e)
             {
-                Logging.Exception(e, "Setup failed: A required prefab or asset was likely null.");
+                Logging.Exception(e);
             }
             catch (NullReferenceException e)
             {
-                Logging.Exception(e, "Setup failed: A required game object or component was not found.");
+                Logging.Exception(e);
             }
         }
 
@@ -106,7 +106,7 @@ namespace Bark.Modules.Movement
             }
             catch (NullReferenceException e)
             {
-                Logging.Exception(e, "SetupBananaGun failed. This is likely due to Player.Instance, the holster, or the bananaGun object being null.");
+                Logging.Exception(e);
             }
         }
         protected override void Cleanup()
