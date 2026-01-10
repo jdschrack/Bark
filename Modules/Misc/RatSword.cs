@@ -11,6 +11,7 @@ namespace Bark.Modules.Misc
     {
         public static readonly string DisplayName = "Rat Sword";
         private GameObject sword;
+
         protected override void OnEnable()
         {
             if (!MenuController.Instance.Built) return;
@@ -24,14 +25,19 @@ namespace Bark.Modules.Misc
                 sword.transform.localRotation = Quaternion.Euler(9, 0, 0);
                 sword.transform.localScale /= 2;
                 sword.SetActive(false);
-                GestureTracker.Instance.rightGrip.OnPressed += (_) => { sword.SetActive(true); };
-                GestureTracker.Instance.rightGrip.OnReleased += (_) => { sword.SetActive(false); };
+                GestureTracker.Instance.rightGrip.OnPressed += OnGripPressed;
+                GestureTracker.Instance.rightGrip.OnReleased += OnGripReleased;
             }
             catch (Exception e) { Logging.Exception(e); }
         }
 
+        private void OnGripPressed(InputTracker _) => sword?.SetActive(true);
+        private void OnGripReleased(InputTracker _) => sword?.SetActive(false);
+
         protected override void Cleanup()
         {
+            GestureTracker.Instance.rightGrip.OnPressed -= OnGripPressed;
+            GestureTracker.Instance.rightGrip.OnReleased -= OnGripReleased;
             sword?.Obliterate();
         }
 

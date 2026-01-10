@@ -17,6 +17,21 @@ namespace Bark.Modules.Physics
     public class Potions : BarkModule
     {
         public static readonly string DisplayName = "Potions";
+
+        // Scale constants
+        private const float MinPlayerScale = 0.03f;
+        private const float MaxPlayerScale = 20f;
+        private const float ShrinkMultiplier = 0.99f;
+        private const float GrowMultiplier = 1.01f;
+        private const float StaticEasing = 0.5f;
+        private const float ScaleLerpSpeed = 0.75f;
+
+        // Audio pitch mapping
+        private const float MinShrinkPitch = 1.5f;
+        private const float MaxShrinkPitch = 1f;
+        private const float MinGrowPitch = 1f;
+        private const float MaxGrowPitch = 0.5f;
+
         private GameObject bottlePrefab, shrinkPotion, growPotion;
         private Material shrinkMaterial, growMaterial;
         private Transform holsterL, holsterR;
@@ -73,7 +88,7 @@ namespace Bark.Modules.Physics
                 minScale = sizeChangerTraverse.Field("minScale");
                 maxScale = sizeChangerTraverse.Field("maxScale");
                 sizeChangerTraverse.Field("myType").SetValue(SizeChanger.ChangerType.Static);
-                sizeChangerTraverse.Field("staticEasing").SetValue(.5f);
+                sizeChangerTraverse.Field("staticEasing").SetValue(StaticEasing);
                 minScale.SetValue(Player.Instance.scale);
                 maxScale.SetValue(Player.Instance.scale);
 
@@ -124,13 +139,13 @@ namespace Bark.Modules.Physics
 
             // Capture current scale once to avoid race conditions between reads
             float currentScale = sizeChanger.MinScale;
-            float multiplier = shrink ? .99f : 1.01f;
-            float newScale = Mathf.Clamp(currentScale * multiplier, .03f, 20f);
+            float multiplier = shrink ? ShrinkMultiplier : GrowMultiplier;
+            float newScale = Mathf.Clamp(currentScale * multiplier, MinPlayerScale, MaxPlayerScale);
 
             if (newScale < 1)
-                potion.gulp.pitch = MathExtensions.Map(currentScale, 0, 1, 1.5f, 1);
+                potion.gulp.pitch = MathExtensions.Map(currentScale, 0, 1, MinShrinkPitch, MaxShrinkPitch);
             else
-                potion.gulp.pitch = MathExtensions.Map(currentScale, 1, 20, 1, .5f);
+                potion.gulp.pitch = MathExtensions.Map(currentScale, 1, MaxPlayerScale, MinGrowPitch, MaxGrowPitch);
 
             minScale.SetValue(newScale);
             maxScale.SetValue(newScale);
@@ -250,13 +265,13 @@ namespace Bark.Modules.Physics
                 var minScale = sizeChangerTraverse.Field("minScale");
                 var maxScale = sizeChangerTraverse.Field("maxScale");
 
-                size = Mathf.Lerp(sc.MinScale, size, .75f * Time.fixedDeltaTime);
+                size = Mathf.Lerp(sc.MinScale, size, ScaleLerpSpeed * Time.fixedDeltaTime);
                 minScale.SetValue(size);
                 maxScale.SetValue(size);
             }
             else
             {
-                size = Mathf.Lerp(rig.scaleFactor, size, .75f * Time.fixedDeltaTime);
+                size = Mathf.Lerp(rig.scaleFactor, size, ScaleLerpSpeed * Time.fixedDeltaTime);
                 sc = CreateSizeChanger(size);
                 sizeChangers.Add(rig, sc);
             }
@@ -269,7 +284,7 @@ namespace Bark.Modules.Physics
             var minScale = sizeChangerTraverse.Field("minScale");
             var maxScale = sizeChangerTraverse.Field("maxScale");
             sizeChangerTraverse.Field("myType").SetValue(SizeChanger.ChangerType.Static);
-            sizeChangerTraverse.Field("staticEasing").SetValue(.5f);
+            sizeChangerTraverse.Field("staticEasing").SetValue(StaticEasing);
             minScale.SetValue(scale);
             maxScale.SetValue(scale);
             return sizeChanger;
