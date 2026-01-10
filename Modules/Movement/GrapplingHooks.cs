@@ -77,11 +77,7 @@ namespace Bark.Modules.Movement
                 SetupBananaGun(ref holsterR, ref bananaGunR, false);
                 ReloadConfiguration();
             }
-            catch (ArgumentException e)
-            {
-                Logging.Exception(e);
-            }
-            catch (NullReferenceException e)
+            catch (Exception e)
             {
                 Logging.Exception(e);
             }
@@ -104,7 +100,7 @@ namespace Bark.Modules.Movement
                 gun.Holster(holster);
                 gun.SetupInteraction();
             }
-            catch (NullReferenceException e)
+            catch (Exception e)
             {
                 Logging.Exception(e);
             }
@@ -271,20 +267,23 @@ namespace Bark.Modules.Movement
 
         void StartSwing()
         {
-            Vector3? hitPoint = TryGetGrapplePoint();
+            Vector3? ropeOrigin = visuals.GetRopeOrigin();
+            if (!ropeOrigin.HasValue) return;
+
+            Vector3? hitPoint = TryGetGrapplePoint(ropeOrigin.Value);
             if (!hitPoint.HasValue) return;
 
             visuals.SetGrappleState(true);
-            physics.StartGrapple(hitPoint.Value, ropeType, pullForce, visuals.GetRopeOrigin());
+            physics.StartGrapple(hitPoint.Value, ropeType, pullForce, ropeOrigin.Value);
         }
 
         /// <summary>
         /// Performs a raycast to find a valid grapple point.
         /// </summary>
         /// <returns>The hit point if found, null otherwise</returns>
-        private Vector3? TryGetGrapplePoint()
+        private Vector3? TryGetGrapplePoint(Vector3 origin)
         {
-            Ray ray = new Ray(visuals.GetRopeOrigin(), transform.forward);
+            Ray ray = new Ray(origin, transform.forward);
             if (UnityEngine.Physics.SphereCast(ray, GRAPPLE_RAYCAST_RADIUS * Player.Instance.scale,
                 out RaycastHit hit, maxLength, Teleport.layerMask))
             {
@@ -312,7 +311,8 @@ namespace Bark.Modules.Movement
             if (!physics.IsGrappling && Selected)
             {
                 // Show targeting laser
-                Vector3? hitPoint = TryGetGrapplePoint();
+                Vector3? ropeOrigin = visuals.GetRopeOrigin();
+                Vector3? hitPoint = ropeOrigin.HasValue ? TryGetGrapplePoint(ropeOrigin.Value) : null;
                 visuals.UpdateLaser(hitPoint);
             }
             else if (physics.IsGrappling)

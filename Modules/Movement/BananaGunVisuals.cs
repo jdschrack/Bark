@@ -126,11 +126,17 @@ namespace Bark.Modules.Movement
 
         /// <summary>
         /// Gets the world position of the rope origin for raycasting.
+        /// Returns null if rope is not available, allowing callers to gate grapple logic.
         /// </summary>
-        public Vector3 GetRopeOrigin()
+        public Vector3? GetRopeOrigin()
         {
-            return rope != null ? rope.transform.position : Vector3.zero;
+            return rope != null ? rope.transform.position : (Vector3?)null;
         }
+
+        /// <summary>
+        /// Returns true if the visuals have valid references for grappling.
+        /// </summary>
+        public bool IsValid => rope != null;
 
         /// <summary>
         /// Sets the interaction layer on models for BarkInteractor compatibility.
