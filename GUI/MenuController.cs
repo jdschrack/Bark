@@ -156,8 +156,7 @@ namespace Bark.GUI
             }
 
             // Update potions tutorial text only when potions module is selected
-            // Use cached string comparison to avoid allocations
-            if (BarkModule.LastEnabled != null && BarkModule.LastEnabled == Potions.Instance)
+            if (helpText != null && BarkModule.LastEnabled != null && BarkModule.LastEnabled == Potions.Instance)
             {
                 helpText.text = Potions.Instance.Tutorial();
             }
@@ -294,7 +293,8 @@ namespace Bark.GUI
             {
                 debugger = isPressed;
                 Logging.Debug("Debugger", debugger ? "active" : "inactive");
-                Plugin.debugText.text = "";
+                if (Plugin.debugText != null)
+                    Plugin.debugText.text = "";
             });
 
             AddDebugButton("Close game", (btn, isPressed) =>

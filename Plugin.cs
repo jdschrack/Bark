@@ -98,6 +98,11 @@ namespace Bark
                 Logging.Debug("Start");
                 Utilla.Events.GameInitialized += OnGameInitialized;
                 assetBundle = AssetUtils.LoadAssetBundle("Bark/Resources/barkbundle");
+                if (assetBundle == null)
+                {
+                    Logging.Warning("Failed to load asset bundle - Bark will not function correctly");
+                    return;
+                }
                 monkeMenuPrefab = assetBundle.LoadAsset<GameObject>("Bark Menu");
             }
             catch (Exception e)

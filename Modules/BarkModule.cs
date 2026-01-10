@@ -77,7 +77,11 @@ namespace Bark.Modules
                 enabledModules[name] = enabled;
             else
                 enabledModules.Add(name, enabled);
-            NetworkPropertyHandler.Instance?.ChangeProperty(enabledModulesKey, enabledModules);
+            // Convert Dictionary to Hashtable for Photon serialization compatibility
+            var hashtable = new ExitGames.Client.Photon.Hashtable();
+            foreach (var kvp in enabledModules)
+                hashtable[kvp.Key] = kvp.Value;
+            NetworkPropertyHandler.Instance?.ChangeProperty(enabledModulesKey, hashtable);
         }
 
         protected virtual void OnDestroy()

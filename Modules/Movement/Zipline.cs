@@ -120,9 +120,15 @@ namespace Bark.Modules.Movement
         {
             try
             {
-                GameObject zipline = Instantiate(ziplinePrefab);
                 // Figure out where the ends of the rope will be
                 Vector3[] endpoints = GetEndpoints(gunStartHook.transform.position, gunStartHook.transform.up);
+                if (endpoints == null || endpoints.Length < 2)
+                {
+                    Logging.Debug("Zipline cancelled: raycasts did not hit valid surfaces");
+                    return null;
+                }
+
+                GameObject zipline = Instantiate(ziplinePrefab);
                 Vector3 start = endpoints[0];
                 Vector3 end = endpoints[1];
                 zipline.transform.position = start;
