@@ -14,7 +14,25 @@ namespace Bark.Modules.Movement
 {
     public class Rockets : BarkModule
     {
+        #region Constants
         public static readonly string DisplayName = "Rockets";
+
+        // Rocket positioning relative to hand
+        private static readonly Vector3 ROCKET_LOCAL_POSITION = new Vector3(0.51f, -3f, 0f);
+        private static readonly Vector3 ROCKET_LOCAL_ROTATION = new Vector3(0f, 0f, -90f);
+
+        // Configuration multipliers
+        private const float POWER_MULTIPLIER = 2f;
+        private const int DEFAULT_POWER = 5;
+        private const int DEFAULT_VOLUME_CONFIG = 10;
+
+        // Volume config range
+        private const int VOLUME_CONFIG_MIN = 0;
+        private const int VOLUME_CONFIG_MAX = 10;
+        private const float VOLUME_OUTPUT_MIN = 0f;
+        private const float VOLUME_OUTPUT_MAX = 1f;
+        #endregion
+
         public static Rockets Instance;
         private GameObject rocketPrefab;
         Rocket rocketL, rocketR;
@@ -60,8 +78,8 @@ namespace Bark.Modules.Movement
             {
                 rocketObj.name = isLeft ? "Bark Rocket Left" : "Bark Rocket Right";
                 var rocket = rocketObj.AddComponent<Rocket>().Init(isLeft);
-                rocket.LocalPosition = new Vector3(0.51f, -3, 0f);
-                rocket.LocalRotation = new Vector3(0, 0, -90);
+                rocket.LocalPosition = ROCKET_LOCAL_POSITION;
+                rocket.LocalRotation = ROCKET_LOCAL_ROTATION;
                 return rocket;
             }
             catch (Exception e)
@@ -101,8 +119,12 @@ namespace Bark.Modules.Movement
             foreach (var rocket in rockets)
             {
                 if (!rocket) continue;
-                rocket.power = Power.Value * 2f;
-                rocket.volume = MathExtensions.Map(Volume.Value, 0, 10, 0, 1);
+                rocket.power = Power.Value * POWER_MULTIPLIER;
+                rocket.volume = Mathf.Clamp(
+                    MathExtensions.Map(Volume.Value, VOLUME_CONFIG_MIN, VOLUME_CONFIG_MAX, VOLUME_OUTPUT_MIN, VOLUME_OUTPUT_MAX),
+                    VOLUME_OUTPUT_MIN,
+                    VOLUME_OUTPUT_MAX
+                );
             }
         }
 
@@ -111,14 +133,14 @@ namespace Bark.Modules.Movement
             Power = Plugin.configFile.Bind(
                 section: DisplayName,
                 key: "power",
-                defaultValue: 5,
+                defaultValue: DEFAULT_POWER,
                 description: "The power of each rocket"
             );
 
             Volume = Plugin.configFile.Bind(
                 section: DisplayName,
                 key: "thruster volume",
-                defaultValue: 10,
+                defaultValue: DEFAULT_VOLUME_CONFIG,
                 description: "How loud the thrusters sound"
             );
         }
@@ -137,7 +159,21 @@ namespace Bark.Modules.Movement
 
     public class Rocket : BarkGrabbable
     {
-        public float power = 5f, volume = .2f;
+        #region Constants
+        // Physics constants for unselected rocket behavior
+        private const float UNSELECTED_VELOCITY_MULTIPLIER = 10f;
+
+        // Audio distance attenuation
+        private const float AUDIO_FALLOFF_DISTANCE = 20f;
+        private const float MAX_VOLUME_GAIN = 0.5f;
+        private const float MIN_VOLUME_GAIN = 0f;
+
+        // Default values
+        private const float DEFAULT_POWER = 5f;
+        private const float DEFAULT_VOLUME_MULTIPLIER = 0.2f;
+        #endregion
+
+        public float power = DEFAULT_POWER, volume = DEFAULT_VOLUME_MULTIPLIER;
         public Vector3 force { get; private set; }
         bool isLeft;
         GestureTracker gt;
@@ -184,14 +220,14 @@ namespace Bark.Modules.Movement
                 player.AddForce(force);
             else
             {
-                rb.linearVelocity += force * 10;
+                rb.linearVelocity += force * UNSELECTED_VELOCITY_MULTIPLIER;
                 force = Vector3.zero;
                 transform.Rotate(Random.insideUnitSphere);
             }
-            this.exhaustSound.volume = Mathf.Lerp(.5f, 0, Vector3.Distance(
-                player.headCollider.transform.position, 
+            this.exhaustSound.volume = Mathf.Lerp(MAX_VOLUME_GAIN, MIN_VOLUME_GAIN, Vector3.Distance(
+                player.headCollider.transform.position,
                 transform.position
-            ) / 20f) * volume;
+            ) / AUDIO_FALLOFF_DISTANCE) * volume;
         }
 
         public override void OnDeselect(BarkInteractor interactor)
