@@ -157,6 +157,8 @@ namespace Bark.Modules.Physics
         {
             if (potion != null && potion.gameObject != null)
             {
+                // Force deselect to avoid dangling references in interactors
+                potion.ForceDeselect();
                 potion.OnDrink = null;
                 potion.gameObject.SetActive(false);
             }
@@ -507,6 +509,33 @@ namespace Bark.Modules.Physics
             cork.transform.localScale = corkScale;
             cork.transform.localRotation = Quaternion.identity;
             cork.shouldPlayPopSound = true;
+        }
+
+        /// <summary>
+        /// Forces all interactors to deselect this potion.
+        /// Call before deactivating to avoid dangling references.
+        /// </summary>
+        public void ForceDeselect()
+        {
+            // Create copy to avoid modifying collection while iterating
+            var selectorsToNotify = new List<BarkInteractor>(selectors);
+            foreach (var selector in selectorsToNotify)
+            {
+                if (selector != null)
+                {
+                    selector.Deselect(this);
+                }
+            }
+            selectors.Clear();
+
+            // Reset transform state
+            transform.SetParent(null);
+            var rb = GetComponent<Rigidbody>();
+            if (rb != null)
+            {
+                rb.isKinematic = true;
+                rb.linearVelocity = Vector3.zero;
+            }
         }
 
         protected override void OnDestroy()

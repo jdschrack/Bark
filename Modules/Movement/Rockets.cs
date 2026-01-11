@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using UnityEngine;
 using Bark.Gestures;
 using Bark.GUI;
@@ -114,6 +115,8 @@ namespace Bark.Modules.Movement
         {
             if (rocket != null && rocket.gameObject != null)
             {
+                // Force deselect to avoid dangling references in interactors
+                rocket.ForceDeselect();
                 rocket.Cleanup();
                 rocket.gameObject.SetActive(false);
             }
@@ -282,6 +285,32 @@ namespace Bark.Modules.Movement
         {
             this.throwOnDetach = true;
             gameObject.layer = BarkInteractor.InteractionLayer;
+        }
+
+        /// <summary>
+        /// Forces all interactors to deselect this rocket.
+        /// Call before deactivating to avoid dangling references.
+        /// </summary>
+        public void ForceDeselect()
+        {
+            // Create copy to avoid modifying collection while iterating
+            var selectorsToNotify = new List<BarkInteractor>(selectors);
+            foreach (var selector in selectorsToNotify)
+            {
+                if (selector != null)
+                {
+                    selector.Deselect(this);
+                }
+            }
+            selectors.Clear();
+
+            // Reset transform state
+            transform.SetParent(null);
+            if (rb != null)
+            {
+                rb.isKinematic = true;
+                rb.linearVelocity = Vector3.zero;
+            }
         }
 
         /// <summary>

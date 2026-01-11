@@ -61,10 +61,14 @@ namespace Bark.Modules.Movement
             IsGrappling = false;
             if (joint != null)
             {
-                // Neutralize the joint by setting spring force to 0 and max distance to very large
+                // Neutralize the joint completely to avoid numerical instability:
+                // 1. Zero out spring forces
+                // 2. Reset anchor to player position (avoids large distance constraints)
+                // 3. Enable autoConfigureConnectedAnchor to let Unity manage anchor position
                 joint.spring = 0f;
                 joint.damper = 0f;
-                joint.maxDistance = float.MaxValue;
+                joint.autoConfigureConnectedAnchor = true;
+                joint.maxDistance = 0f;
                 joint.minDistance = 0f;
             }
         }

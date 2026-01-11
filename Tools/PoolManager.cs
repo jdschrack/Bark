@@ -33,7 +33,13 @@ namespace Bark.Tools
         {
             if (pools.TryGetValue(key, out var existingPool))
             {
-                return (ObjectPool<T>)existingPool;
+                if (existingPool is ObjectPool<T> typedPool)
+                {
+                    return typedPool;
+                }
+                // Type mismatch - log error and return null to avoid InvalidCastException
+                Debug.LogError($"[PoolManager] Pool '{key}' exists but has different type. Expected ObjectPool<{typeof(T).Name}>");
+                return null;
             }
 
             var newPool = new ObjectPool<T>(createFunc, onGet, onRelease, initialSize, maxSize);
@@ -44,12 +50,17 @@ namespace Bark.Tools
         /// <summary>
         /// Gets an existing pool by key.
         /// </summary>
-        /// <returns>The pool if found, null otherwise</returns>
+        /// <returns>The pool if found and type matches, null otherwise</returns>
         public static ObjectPool<T> GetPool<T>(string key) where T : Component
         {
             if (pools.TryGetValue(key, out var pool))
             {
-                return (ObjectPool<T>)pool;
+                if (pool is ObjectPool<T> typedPool)
+                {
+                    return typedPool;
+                }
+                Debug.LogError($"[PoolManager] Pool '{key}' exists but has different type. Expected ObjectPool<{typeof(T).Name}>");
+                return null;
             }
             return null;
         }

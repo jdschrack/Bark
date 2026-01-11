@@ -22,6 +22,7 @@ namespace Bark.Tools
     public class ObjectPool<T> : IPool where T : Component
     {
         private readonly Queue<T> pool = new Queue<T>();
+        private readonly HashSet<T> pooledObjects = new HashSet<T>();
         private readonly Func<T> createFunc;
         private readonly Action<T> onGet;
         private readonly Action<T> onRelease;
@@ -54,6 +55,7 @@ namespace Bark.Tools
                 {
                     onRelease?.Invoke(obj);
                     pool.Enqueue(obj);
+                    pooledObjects.Add(obj);
                 }
             }
         }
@@ -67,6 +69,7 @@ namespace Bark.Tools
             if (pool.Count > 0)
             {
                 obj = pool.Dequeue();
+                pooledObjects.Remove(obj);
                 // Handle case where pooled object was destroyed externally
                 if (obj == null)
                 {
@@ -90,10 +93,18 @@ namespace Bark.Tools
         {
             if (obj == null) return;
 
+            // Guard against double-release
+            if (pooledObjects.Contains(obj))
+            {
+                Debug.LogWarning($"[ObjectPool] Attempted to release already-pooled object: {obj.name}");
+                return;
+            }
+
             if (pool.Count < maxSize)
             {
                 onRelease?.Invoke(obj);
                 pool.Enqueue(obj);
+                pooledObjects.Add(obj);
             }
             else
             {
@@ -118,6 +129,7 @@ namespace Bark.Tools
                     UnityEngine.Object.Destroy(obj.gameObject);
                 }
             }
+            pooledObjects.Clear();
         }
     }
 }
