@@ -53,15 +53,23 @@ namespace Bark.Modules.Movement
         }
 
         /// <summary>
-        /// Ends the current grapple and destroys the joint.
+        /// Ends the current grapple and neutralizes the joint (keeps it cached for reuse).
+        /// SpringJoint doesn't have an enabled property, so we neutralize it instead.
         /// </summary>
         public void EndGrapple()
         {
             IsGrappling = false;
             if (joint != null)
             {
-                joint.Obliterate();
-                joint = null;
+                // Neutralize the joint completely to avoid numerical instability:
+                // 1. Zero out spring forces
+                // 2. Reset anchor to player position (avoids large distance constraints)
+                // 3. Enable autoConfigureConnectedAnchor to let Unity manage anchor position
+                joint.spring = 0f;
+                joint.damper = 0f;
+                joint.autoConfigureConnectedAnchor = true;
+                joint.maxDistance = 0f;
+                joint.minDistance = 0f;
             }
         }
 
@@ -81,7 +89,7 @@ namespace Bark.Modules.Movement
 
         /// <summary>
         /// Ensures the SpringJoint exists on the player.
-        /// Creates one if it doesn't exist.
+        /// Creates one if it doesn't exist; the joint will be configured in ConfigureJoint.
         /// </summary>
         private void EnsureJointExists()
         {
@@ -89,6 +97,7 @@ namespace Bark.Modules.Movement
             {
                 joint = Player.Instance.gameObject.AddComponent<SpringJoint>();
             }
+            // Joint configuration happens in ConfigureJoint - no need to set enabled
         }
 
         /// <summary>

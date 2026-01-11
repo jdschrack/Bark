@@ -35,9 +35,15 @@ namespace Bark.Modules.Physics
         // Holster positioning relative to player body
         private static readonly Vector3 HOLSTER_OFFSET = new Vector3(0.15f, -0.15f, 0.15f);
 
+        // Pool configuration
+        private const string POTION_POOL_KEY = "Bark_Potions";
+        private const int POTION_POOL_SIZE = 2;
+
         private GameObject bottlePrefab, shrinkPotion, growPotion;
         private Material shrinkMaterial, growMaterial;
         private Transform holsterL, holsterR;
+        private ObjectPool<SizePotion> potionPool;
+        private SizePotion shrinkPotionComponent, growPotionComponent;
         public static SizeChanger sizeChanger;
         public static Traverse sizeChangerTraverse, minScale, maxScale;
         public static Potions Instance;
@@ -85,22 +91,31 @@ namespace Bark.Modules.Physics
                     bottlePrefab = Plugin.assetBundle.LoadAsset<GameObject>("Potion Bottle");
 
                 NetworkPropertyHandler.Instance?.ChangeProperty(playerSizeKey, Player.Instance.scale);
-                sizeChanger = new GameObject("Bark Size Changer").AddComponent<SizeChanger>();
-                sizeChangerTraverse = Traverse.Create(sizeChanger);
-                minScale = sizeChangerTraverse.Field("minScale");
-                maxScale = sizeChangerTraverse.Field("maxScale");
-                sizeChangerTraverse.Field("myType").SetValue(SizeChanger.ChangerType.Static);
-                sizeChangerTraverse.Field("staticEasing").SetValue(StaticEasing);
+
+                // Cache SizeChanger - create once and reuse
+                EnsureSizeChangerExists();
                 minScale.SetValue(Player.Instance.scale);
                 maxScale.SetValue(Player.Instance.scale);
 
+                // Get or create the potion pool
+                potionPool = PoolManager.GetOrCreatePool(
+                    POTION_POOL_KEY,
+                    createFunc: CreatePotion,
+                    onGet: OnPotionGet,
+                    onRelease: OnPotionRelease,
+                    initialSize: 0,
+                    maxSize: POTION_POOL_SIZE
+                );
+
                 holsterL = new GameObject($"Holster (Left)").transform;
-                shrinkPotion = Instantiate(bottlePrefab);
-                SetupPotion(ref holsterL, ref shrinkPotion, true);
+                shrinkPotionComponent = potionPool.Get();
+                shrinkPotion = shrinkPotionComponent.gameObject;
+                SetupPotion(ref holsterL, shrinkPotionComponent, true);
 
                 holsterR = new GameObject($"Holster (Right)").transform;
-                growPotion = Instantiate(bottlePrefab);
-                SetupPotion(ref holsterR, ref growPotion, false);
+                growPotionComponent = potionPool.Get();
+                growPotion = growPotionComponent.gameObject;
+                SetupPotion(ref holsterR, growPotionComponent, false);
                 ReloadConfiguration();
             }
             catch (Exception e)
@@ -109,7 +124,47 @@ namespace Bark.Modules.Physics
             }
         }
 
-        void SetupPotion(ref Transform holster, ref GameObject potion, bool isLeft)
+        void EnsureSizeChangerExists()
+        {
+            if (sizeChanger == null)
+            {
+                sizeChanger = new GameObject("Bark Size Changer").AddComponent<SizeChanger>();
+                sizeChangerTraverse = Traverse.Create(sizeChanger);
+                minScale = sizeChangerTraverse.Field("minScale");
+                maxScale = sizeChangerTraverse.Field("maxScale");
+                sizeChangerTraverse.Field("myType").SetValue(SizeChanger.ChangerType.Static);
+                sizeChangerTraverse.Field("staticEasing").SetValue(StaticEasing);
+            }
+            sizeChanger.gameObject.SetActive(true);
+        }
+
+        SizePotion CreatePotion()
+        {
+            var potionObj = Instantiate(bottlePrefab);
+            potionObj.name = "Bark Potion (Pooled)";
+            return potionObj.AddComponent<SizePotion>();
+        }
+
+        void OnPotionGet(SizePotion potion)
+        {
+            if (potion != null && potion.gameObject != null)
+            {
+                potion.gameObject.SetActive(true);
+            }
+        }
+
+        void OnPotionRelease(SizePotion potion)
+        {
+            if (potion != null && potion.gameObject != null)
+            {
+                // Force deselect to avoid dangling references in interactors
+                potion.ForceDeselect();
+                potion.OnDrink = null;
+                potion.gameObject.SetActive(false);
+            }
+        }
+
+        void SetupPotion(ref Transform holster, SizePotion sizePotion, bool isLeft)
         {
             try
             {
@@ -122,7 +177,6 @@ namespace Bark.Modules.Physics
                 );
                 holster.localPosition = offset;
 
-                var sizePotion = potion.AddComponent<SizePotion>();
                 sizePotion.name = isLeft ? "Bark Shrink Potion" : "Bark Grow Potion";
                 sizePotion.Holster(holster);
                 sizePotion.OnDrink += DrinkPotion;
@@ -167,11 +221,33 @@ namespace Bark.Modules.Physics
             try
             {
                 active = false;
+
+                // Destroy holsters (lightweight transforms, not worth pooling)
                 holsterL?.gameObject?.Obliterate();
                 holsterR?.gameObject?.Obliterate();
-                shrinkPotion?.gameObject?.Obliterate();
-                growPotion?.gameObject?.Obliterate();
-                sizeChanger?.gameObject.Obliterate();
+
+                // Return potions to pool instead of destroying
+                if (potionPool != null)
+                {
+                    if (shrinkPotionComponent != null)
+                    {
+                        potionPool.Release(shrinkPotionComponent);
+                        shrinkPotionComponent = null;
+                        shrinkPotion = null;
+                    }
+                    if (growPotionComponent != null)
+                    {
+                        potionPool.Release(growPotionComponent);
+                        growPotionComponent = null;
+                        growPotion = null;
+                    }
+                }
+
+                // Deactivate SizeChanger instead of destroying (keeps it cached)
+                if (sizeChanger != null)
+                {
+                    sizeChanger.gameObject.SetActive(false);
+                }
             }
             catch (Exception e) { Logging.Exception(e); }
         }
@@ -433,6 +509,33 @@ namespace Bark.Modules.Physics
             cork.transform.localScale = corkScale;
             cork.transform.localRotation = Quaternion.identity;
             cork.shouldPlayPopSound = true;
+        }
+
+        /// <summary>
+        /// Forces all interactors to deselect this potion.
+        /// Call before deactivating to avoid dangling references.
+        /// </summary>
+        public void ForceDeselect()
+        {
+            // Create copy to avoid modifying collection while iterating
+            var selectorsToNotify = new List<BarkInteractor>(selectors);
+            foreach (var selector in selectorsToNotify)
+            {
+                if (selector != null)
+                {
+                    selector.Deselect(this);
+                }
+            }
+            selectors.Clear();
+
+            // Reset transform state
+            transform.SetParent(null);
+            var rb = GetComponent<Rigidbody>();
+            if (rb != null)
+            {
+                rb.isKinematic = true;
+                rb.linearVelocity = Vector3.zero;
+            }
         }
 
         protected override void OnDestroy()

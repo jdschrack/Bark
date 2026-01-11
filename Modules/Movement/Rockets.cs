@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using UnityEngine;
 using Bark.Gestures;
 using Bark.GUI;
@@ -31,10 +32,15 @@ namespace Bark.Modules.Movement
         private const int VOLUME_CONFIG_MAX = 10;
         private const float VOLUME_OUTPUT_MIN = 0f;
         private const float VOLUME_OUTPUT_MAX = 1f;
+
+        // Pool configuration
+        private const string ROCKET_POOL_KEY = "Bark_Rockets";
+        private const int ROCKET_POOL_SIZE = 2;
         #endregion
 
         public static Rockets Instance;
         private GameObject rocketPrefab;
+        private ObjectPool<Rocket> rocketPool;
         Rocket rocketL, rocketR;
 
         void Awake()
@@ -62,8 +68,26 @@ namespace Bark.Modules.Movement
                 if (!rocketPrefab)
                     rocketPrefab = Plugin.assetBundle.LoadAsset<GameObject>("Rocket");
 
-                rocketL = SetupRocket(Instantiate(rocketPrefab), true);
-                rocketR = SetupRocket(Instantiate(rocketPrefab), false);
+                // Get or create the rocket pool
+                rocketPool = PoolManager.GetOrCreatePool(
+                    ROCKET_POOL_KEY,
+                    createFunc: CreateRocket,
+                    onGet: OnRocketGet,
+                    onRelease: OnRocketRelease,
+                    initialSize: 0,
+                    maxSize: ROCKET_POOL_SIZE
+                );
+
+                rocketL = rocketPool.Get();
+                rocketL.Init(true);
+                rocketL.LocalPosition = ROCKET_LOCAL_POSITION;
+                rocketL.LocalRotation = ROCKET_LOCAL_ROTATION;
+
+                rocketR = rocketPool.Get();
+                rocketR.Init(false);
+                rocketR.LocalPosition = ROCKET_LOCAL_POSITION;
+                rocketR.LocalRotation = ROCKET_LOCAL_ROTATION;
+
                 ReloadConfiguration();
             }
             catch (Exception e)
@@ -72,21 +96,30 @@ namespace Bark.Modules.Movement
             }
         }
 
-        Rocket SetupRocket(GameObject rocketObj, bool isLeft)
+        Rocket CreateRocket()
         {
-            try
+            var rocketObj = Instantiate(rocketPrefab);
+            rocketObj.name = "Bark Rocket (Pooled)";
+            return rocketObj.AddComponent<Rocket>();
+        }
+
+        void OnRocketGet(Rocket rocket)
+        {
+            if (rocket != null && rocket.gameObject != null)
             {
-                rocketObj.name = isLeft ? "Bark Rocket Left" : "Bark Rocket Right";
-                var rocket = rocketObj.AddComponent<Rocket>().Init(isLeft);
-                rocket.LocalPosition = ROCKET_LOCAL_POSITION;
-                rocket.LocalRotation = ROCKET_LOCAL_ROTATION;
-                return rocket;
+                rocket.gameObject.SetActive(true);
             }
-            catch (Exception e)
+        }
+
+        void OnRocketRelease(Rocket rocket)
+        {
+            if (rocket != null && rocket.gameObject != null)
             {
-                Logging.Exception(e);
+                // Force deselect to avoid dangling references in interactors
+                rocket.ForceDeselect();
+                rocket.Cleanup();
+                rocket.gameObject.SetActive(false);
             }
-            return null;
         }
 
         public Vector3 AddedVelocity()
@@ -98,8 +131,20 @@ namespace Bark.Modules.Movement
         {
             try
             {
-                rocketL?.gameObject?.Obliterate();
-                rocketR?.gameObject?.Obliterate();
+                // Return rockets to pool instead of destroying
+                if (rocketPool != null)
+                {
+                    if (rocketL != null)
+                    {
+                        rocketPool.Release(rocketL);
+                        rocketL = null;
+                    }
+                    if (rocketR != null)
+                    {
+                        rocketPool.Release(rocketR);
+                        rocketR = null;
+                    }
+                }
             }
             catch (Exception e) { Logging.Exception(e); }
         }
@@ -242,12 +287,48 @@ namespace Bark.Modules.Movement
             gameObject.layer = BarkInteractor.InteractionLayer;
         }
 
-        protected override void OnDestroy()
+        /// <summary>
+        /// Forces all interactors to deselect this rocket.
+        /// Call before deactivating to avoid dangling references.
+        /// </summary>
+        public void ForceDeselect()
         {
-            base.OnDestroy();
+            // Create copy to avoid modifying collection while iterating
+            var selectorsToNotify = new List<BarkInteractor>(selectors);
+            foreach (var selector in selectorsToNotify)
+            {
+                if (selector != null)
+                {
+                    selector.Deselect(this);
+                }
+            }
+            selectors.Clear();
+
+            // Reset transform state
+            transform.SetParent(null);
+            if (rb != null)
+            {
+                rb.isKinematic = true;
+                rb.linearVelocity = Vector3.zero;
+            }
+        }
+
+        /// <summary>
+        /// Cleans up event subscriptions when the rocket is returned to the pool.
+        /// </summary>
+        public void Cleanup()
+        {
             if (!gt) return;
             gt.leftGrip.OnPressed -= Attach;
             gt.rightGrip.OnPressed -= Attach;
+            exhaustSound?.Stop();
+            force = Vector3.zero;
+        }
+
+        protected override void OnDestroy()
+        {
+            base.OnDestroy();
+            Cleanup();
         }
     }
 }
